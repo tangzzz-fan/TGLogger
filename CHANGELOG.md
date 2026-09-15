@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI: `workflow_dispatch` was nested under `pull_request` and could not be triggered manually.
 
 ### Added
+- **`MemoryDestination.makeRecordsStream(bufferingPolicy:)`**: live tail as `AsyncStream<LogRecord>`. Yields records written after subscription (no replay of buffered history); multiple independent streams per destination; teardown on task cancellation; `clear()` keeps the stream alive. First slice of the 0.2.0 `TGLoggerUI` plan.
 - CI guard that fails when a file under `docs/` exists on disk but is not tracked by git (defends against the ignore rule above).
 - `docs/devnotes/`: development notes index, template, and the first note documenting the `.gitignore` trap.
 

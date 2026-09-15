@@ -302,3 +302,117 @@ struct SinkTests {
         #expect(Set(records.map(\.id)).count == 1000)
     }
 }
+
+@Suite("MemoryDestination streaming")
+struct MemoryStreamTests {
+    /// Polls `condition` for up to ~2s so subscription / teardown races are deterministic.
+    private func waitFor(
+        _ condition: @autoclosure () async -> Bool
+    ) async -> Bool {
+        for _ in 0..<200 {
+            if await condition() { return true }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        return false
+    }
+
+    @Test("Stream yields records written after subscription")
+    func yieldsNewRecords() async {
+        let memory = MemoryDestination(capacity: 8)
+        let logger = makeCenter([memory]).logger(category: "stream")
+
+        let task = Task {
+            var messages: [String] = []
+            for await record in memory.makeRecordsStream() {
+                messages.append(record.message)
+                if messages.count == 2 { break }
+            }
+            return messages
+        }
+
+        let subscribed = await waitFor(memory.activeStreamCount == 1)
+        #expect(subscribed)
+
+        logger.info("first")
+        logger.info("second")
+
+        let messages = await task.value
+        #expect(messages == ["first", "second"])
+
+        let cleanedUp = await waitFor(memory.activeStreamCount == 0)
+        #expect(cleanedUp)
+    }
+
+    @Test("Records written before subscription are not replayed")
+    func noReplayOfHistory() async {
+        let memory = MemoryDestination(capacity: 8)
+        let logger = makeCenter([memory]).logger(category: "stream")
+        logger.info("history")
+
+        let task = Task {
+            var messages: [String] = []
+            for await record in memory.makeRecordsStream() {
+                messages.append(record.message)
+                if messages.count == 1 { break }
+            }
+            return messages
+        }
+        _ = await waitFor(memory.activeStreamCount == 1)
+
+        logger.info("live")
+
+        let messages = await task.value
+        #expect(messages == ["live"])
+    }
+
+    @Test("Two streams each receive every record")
+    func twoConsumers() async {
+        let memory = MemoryDestination(capacity: 8)
+        let logger = makeCenter([memory]).logger(category: "stream")
+
+        func collectOne() -> Task<String, Never> {
+            Task {
+                var message = ""
+                for await record in memory.makeRecordsStream() {
+                    message = record.message
+                    break
+                }
+                return message
+            }
+        }
+        let first = collectOne()
+        let second = collectOne()
+
+        let subscribed = await waitFor(memory.activeStreamCount == 2)
+        #expect(subscribed)
+
+        logger.info("fanout")
+
+        #expect(await first.value == "fanout")
+        #expect(await second.value == "fanout")
+        #expect(await waitFor(memory.activeStreamCount == 0))
+    }
+
+    @Test("clear() does not finish the stream")
+    func clearKeepsStreamAlive() async {
+        let memory = MemoryDestination(capacity: 8)
+        let logger = makeCenter([memory]).logger(category: "stream")
+
+        let task = Task {
+            var messages: [String] = []
+            for await record in memory.makeRecordsStream() {
+                messages.append(record.message)
+                if messages.count == 2 { break }
+            }
+            return messages
+        }
+        _ = await waitFor(memory.activeStreamCount == 1)
+
+        logger.info("before clear")
+        memory.clear()
+        logger.info("after clear")
+
+        let messages = await task.value
+        #expect(messages == ["before clear", "after clear"])
+    }
+}

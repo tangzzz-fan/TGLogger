@@ -19,7 +19,7 @@ Logger (category + bound metadata)
 
 - `Logger`：值类型，方法全部同步。
 - `LogCenter`：引用类型，同一 center 上创建的 logger 共享管道。
-- `LogRecord`：不可变 `Sendable` 值。形状保持稳定，后续控制台 / 导出直接消费 `MemoryDestination.snapshot()`。
+- `LogRecord`：不可变 `Sendable` 值。形状保持稳定，后续控制台 / 导出直接消费 `MemoryDestination.snapshot()`，或用 `MemoryDestination.makeRecordsStream()` 订阅实时流。
 
 ---
 

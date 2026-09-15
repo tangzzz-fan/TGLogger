@@ -4,6 +4,9 @@ import os
 ///
 /// When the buffer is full, the oldest record is dropped. `write` is thread-safe
 /// and does not hop to `MainActor`.
+///
+/// Besides pulling with ``snapshot()``, consumers can subscribe with
+/// ``makeRecordsStream(bufferingPolicy:)`` for a live tail.
 public final class MemoryDestination: LogDestination, Sendable {
     public let name: String
     public let minimumLevel: LogLevel
@@ -20,10 +23,46 @@ public final class MemoryDestination: LogDestination, Sendable {
         lock.withLock { $0.capacity }
     }
 
+    /// Number of currently subscribed record streams. Exposed for tests.
+    var activeStreamCount: Int {
+        lock.withLock { $0.streams.count }
+    }
+
     public func write(_ record: LogRecord) {
-        lock.withLock { ring in
+        let streams = lock.withLock { ring -> [StreamBox] in
             ring.append(record)
+            return ring.streams
         }
+        for stream in streams {
+            stream.continuation.yield(record)
+        }
+    }
+
+    /// Returns a live tail of records written **after** the subscription.
+    ///
+    /// The stream never replays buffered history — call ``snapshot()`` for that.
+    /// Every call creates an independent stream; cancelling the consuming task
+    /// (or breaking out of `for await`) tears the subscription down. `clear()`
+    /// does not finish the stream.
+    ///
+    /// The default buffering is unbounded: a consumer that stops reading without
+    /// terminating accumulates memory. Pass a tighter `bufferingPolicy` (for
+    /// example `.bufferingNewest(1)`) to trade dropped records for a hard cap.
+    public func makeRecordsStream(
+        bufferingPolicy: AsyncStream<LogRecord>.Continuation.BufferingPolicy = .unbounded
+    ) -> AsyncStream<LogRecord> {
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: LogRecord.self,
+            bufferingPolicy: bufferingPolicy
+        )
+        let box = StreamBox(continuation: continuation)
+        continuation.onTermination = { [weak self] _ in
+            self?.removeStream(box)
+        }
+        lock.withLock { ring in
+            ring.streams.append(box)
+        }
+        return stream
     }
 
     public func snapshot() -> [LogRecord] {
@@ -33,6 +72,22 @@ public final class MemoryDestination: LogDestination, Sendable {
     public func clear() {
         lock.withLock { $0.clear() }
     }
+
+    private func removeStream(_ box: StreamBox) {
+        lock.withLock { ring in
+            ring.streams.removeAll { $0 === box }
+        }
+    }
+}
+
+/// Identity wrapper: `AsyncStream.Continuation` is a struct, so removal by
+/// identity needs a class box. `Continuation` is `Sendable`, so the box can be too.
+private final class StreamBox: Sendable {
+    let continuation: AsyncStream<LogRecord>.Continuation
+
+    init(continuation: AsyncStream<LogRecord>.Continuation) {
+        self.continuation = continuation
+    }
 }
 
 private struct Ring: Sendable {
@@ -40,6 +95,7 @@ private struct Ring: Sendable {
     private var slots: [LogRecord?]
     private var head: Int
     private var count: Int
+    var streams: [StreamBox] = []
 
     init(capacity: Int) {
         self.capacity = capacity

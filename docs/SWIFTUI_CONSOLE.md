@@ -137,6 +137,10 @@ products: [
 
 ## 6. 实时更新：核心库要开的最小口子
 
+**状态更新（2026-09-15）：第 1 方案已实现。** `MemoryDestination.makeRecordsStream(bufferingPolicy:)` 返回 `AsyncStream<LogRecord>`，只推订阅之后的新记录（不重放历史，历史走 `snapshot()`）；订阅 / 取消全部走 `onTermination` 清理；`clear()` 不断流；默认无界缓冲，消费者可以传 `.bufferingNewest(1)` 换取内存上限。仍未做：同步回调方案（按本节决定，不做了）、`TGLoggerUI` 本体、Example 改造。
+
+以下为当时的方案论证，保留备查。
+
 控制台如果继续只 `snapshot()`，就不是产品，只是 Demo。0.2 允许在 **`TGLogger`** 上加一处仍保持 `Sendable`、仍不 hop `MainActor` 的订阅。
 
 二选一，**不要两个都做**：
