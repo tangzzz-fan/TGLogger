@@ -6,4 +6,11 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
-docs/
+
+# 不要在这里写裸 `docs/`（或 `Docs/`）：macOS 默认大小写不敏感，
+# 该规则会连 `Docs/` 一起吞掉，手写文档会「本地存在但 git 永远不收」。
+# 手写文档（docs/、docs/devnotes/）必须入库，只忽略生成物。
+# 背景与复现：docs/devnotes/2026-09-15-docs-gitignore-swallow.md
+
+# 本地助手数据（记忆、日志），不属于包内容
+.workbuddy/

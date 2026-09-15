@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - main
-    workflow_dispatch:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -24,6 +24,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Guard hand-written docs are tracked
+        run: |
+          missing=$(comm -13 <(git ls-files docs | sort) <(find docs -type f 2>/dev/null | sort))
+          if [ -n "$missing" ]; then
+            echo "::error::以下 docs/ 文件在磁盘上存在，但没有被 git 跟踪（检查 .gitignore 是否吞掉了它们）:"
+            echo "$missing"
+            exit 1
+          fi
 
       - name: Show toolchain versions
         run: |

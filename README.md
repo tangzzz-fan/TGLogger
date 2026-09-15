@@ -87,4 +87,4 @@ logs.logger(category: "auth").info("hello")
 
 GitHub Actions runs `swift build` and `swift test` for pushes and PRs targeting `main`.
 
-See [DesignInfo.md](DesignInfo.md) for architecture, concurrency rules, and how this can later adapt TGReduxKit / TGFeatureFlag log hooks.
+See [DesignInfo.md](DesignInfo.md) for architecture and [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md) for why the example list is not a library console, and what `TGLoggerUI` will be in 0.2.0.

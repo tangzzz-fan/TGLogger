@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- `docs/` is no longer excluded by `.gitignore`: the bare `docs/` rule also matched `Docs/` on macOS case-insensitive filesystems, so hand-written docs silently never got committed. The directory is now lowercase `docs/` and README/DesignInfo links were updated.
+- CI: `workflow_dispatch` was nested under `pull_request` and could not be triggered manually.
+
+### Added
+- CI guard that fails when a file under `docs/` exists on disk but is not tracked by git (defends against the ignore rule above).
+- `docs/devnotes/`: development notes index, template, and the first note documenting the `.gitignore` trap.
+
 ## [0.1.0] - 2026-09-15
 
 ### Added
