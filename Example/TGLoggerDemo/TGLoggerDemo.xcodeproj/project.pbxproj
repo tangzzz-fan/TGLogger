@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A11C0001F1C0000000000012 /* TGLogger in Frameworks */ = {isa = PBXBuildFile; productRef = A11C0001F1C0000000000011 /* TGLogger */; };
+		A11C0001F1C0000000000014 /* TGLoggerUI in Frameworks */ = {isa = PBXBuildFile; productRef = A11C0001F1C0000000000013 /* TGLoggerUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A11C0001F1C0000000000012 /* TGLogger in Frameworks */,
+				A11C0001F1C0000000000014 /* TGLoggerUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = TGLoggerDemo;
 			packageProductDependencies = (
 				A11C0001F1C0000000000011 /* TGLogger */,
+				A11C0001F1C0000000000013 /* TGLoggerUI */,
 			);
 			productName = TGLoggerDemo;
 			productReference = A11C0001F1C0000000000004 /* TGLoggerDemo.app */;
@@ -358,6 +361,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A11C0001F1C0000000000010 /* XCLocalSwiftPackageReference "../.." */;
 			productName = TGLogger;
+		};
+		A11C0001F1C0000000000013 /* TGLoggerUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A11C0001F1C0000000000010 /* XCLocalSwiftPackageReference "../.." */;
+			productName = TGLoggerUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

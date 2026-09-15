@@ -32,12 +32,16 @@
 | `Tests` | 新 suite 4 例：种子+跟随、容量修剪、四种过滤、`clear` 双清 |
 
 **仍未做（有意的）**：Example 改用 `TGLoggerUI` 需动 Xcode 工程的 `packageProductDependencies`，放到下一刀单独做，避免和本次 SPM 改动混在一个提交里。
+**（当晚追加）Example 迁移已完成**：pbxproj 增加 `TGLoggerUI` product 依赖（沿用既有编号风格，`plutil -lint` 通过）；`ContentView` 删掉自制 List/Row，改为 "Open log console" 推入 `LogConsoleView`；`DemoLogStore` 去掉 `records`/`refresh()`，只留发射动作与 `memory`。**用户在 Xcode 中确认编译通过。**
+
+**验证的环境教训（会重复）**：本机代理环境里 `xcodebuild` / 裸 `swiftc` 的宏插件链路会报 `sandbox-exec: sandbox_apply: Operation not permitted`（Xcode 内部 SwiftPM 申请嵌套 seatbelt 被拒；独立的 `sandbox-exec` 反而可用，`SWIFTPM_DISABLE_SANDBOX` 无效）。**能走通的替代路径**：① `swift test --disable-sandbox`；② 在 /tmp 造一个检查包，把待验证源文件作为 `executableTarget`（`swiftSettings: [.defaultIsolation(MainActor.self)]`，注意该 API 需 tools 6.2）依赖本包两个 product，`swift build --disable-sandbox`。注意 `swift build --triple <iOS sim>` 不行：SDKROOT 会泄漏进 manifest 编译。最终仍需 Xcode 里真机/模拟器确认渲染。
 
 ## 验证
 
 - 27 用例 / 8 suite 全绿 × 3 次（含新 4 例；红→绿路径：坑②先被用例抓出）。
 - `swift package describe` 确认两个 product 各自正确。
-- **未验证**：真机/模拟器上的 SwiftUI 呈现（SPM 测试只覆盖 store 逻辑，视图未跑渲染）；`UIHostingController` 嵌入路径。交给 Example 改造那一步在模拟器里验收。
+- **Example 编译：用户在 Xcode 中确认通过**（代理环境的 xcodebuild 沙箱限制挡住了命令行验证路径，见落地要点末尾的环境教训）。
+- **未验证**：模拟器上的 SwiftUI 渲染与交互（"Open log console" 推入、过滤、清空）——留给真实使用反馈；`UIHostingController` 嵌入路径同样未跑。
 
 ## 下一步与遗留
 

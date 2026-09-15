@@ -19,6 +19,8 @@
 
 | 我看到的信号 | 大概是什么问题 | 手记 |
 |--------------|----------------|------|
+| `xcodebuild` 报 `sandbox-exec: sandbox_apply: Operation not permitted`（Could not resolve package dependencies） | 代理环境拒绝 Xcode 内部 SwiftPM 的嵌套沙箱；命令行走不通，改用 /tmp 检查包 + `swift build --disable-sandbox`，最终以 Xcode 手动编译为准 | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
+| 裸 `swiftc` 报「external macro implementation … could not be found / malformed response」 | 同一个沙箱问题打挂了 swift-plugin-server | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
 | `self.xxx` 报「used before being initialized」（Task 闭包里捕获 self） | `let` 属性的初始化表达式里逃逸捕获未初始化完的 self；改 optional var | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
 | 界面/消费端静默丢掉最早一批记录 | 「先取快照、后异步订阅」之间的窗口；先注册订阅再快照，按 seed id 去重 | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
 | `===` 编译报错「expected to be an instance of a class」 | 被比较的类型是 struct（如 `AsyncStream.Continuation`），要包一层 class 做身份 | [memory-destination-stream](2026-09-15-memory-destination-stream.md) |
@@ -37,7 +39,7 @@
 
 | 手记 | 卡在哪 | 下一步 | 复查日期 |
 |------|--------|--------|----------|
-| [tgloggerui-product](2026-09-15-tgloggerui-product.md) | SwiftUI 视图未经真机渲染验证 | Example 改用 `TGLoggerUI` 时在模拟器验收 | 下一刀（Example 改造） |
+| [tgloggerui-product](2026-09-15-tgloggerui-product.md) | Example 已在 Xcode 编译通过，但模拟器上的渲染/交互未手测 | 跑一次模拟器：推入控制台、过滤、清空 | 0.2.0 发版前 |
 | [memory-destination-stream](2026-09-15-memory-destination-stream.md) | `bufferingNewest` 策略无专项测试 | 随 `LogConsoleStore` 验收一并看是否需要 | 0.2.0 发版前 |
 | [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | ~~守卫在 CI 的首次实跑还没发生~~ **已确认**：run `34977311114` 绿灯（2026-09-15） | 关闭 | — |
 | [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | 兄弟仓库 `TGFeatureFlag` 用的是同一份 `.gitignore` 模板 | 决定是否一起删掉那条 `docs/` | 下次动该仓库时 |

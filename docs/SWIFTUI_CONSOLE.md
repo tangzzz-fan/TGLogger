@@ -102,7 +102,7 @@ flowchart LR
 
 ## 5. 0.2.0 要做成什么
 
-**状态更新（2026-09-15）：本节范围已在 main 落地**（`Package.swift` 新增可选 product `TGLoggerUI`：`LogConsoleView` + `LogConsoleStore` + `LogConsoleFilter`，附带测试）。仍待做：Example 改用 `TGLoggerUI` 并删自制 List；App 侧真机试用。
+**状态更新（2026-09-15）：本节范围已在 main 落地**（`Package.swift` 新增可选 product `TGLoggerUI`：`LogConsoleView` + `LogConsoleStore` + `LogConsoleFilter`，附带测试）。Example 已改用 `TGLoggerUI` 并删掉自制 List（"Open log console" 入口），Xcode 中编译通过；待办只剩发 0.2.0 tag 与真实使用反馈。
 
 **一句话**：DEBUG 用的进程内日志浏览器，读同一个 `MemoryDestination`，可选链入；Release 默认不出现。
 

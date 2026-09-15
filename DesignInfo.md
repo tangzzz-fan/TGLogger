@@ -75,7 +75,7 @@ PII 放进 metadata，不要插进 message。
 | 版本 | 内容 |
 |------|------|
 | **0.1.x** | 核心 API 冻结试用：`LogCenter` / `Logger` / Destination / 来源与 correlation ID。Example 只作教具。 |
-| **0.2.0** | 可选独立 product `TGLoggerUI`（进程内控制台）。不放进默认 `TGLogger`，避免只想打日志的 App 链到 SwiftUI。决策见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)。**进度（2026-09-15）：stream 与 `TGLoggerUI` 已落地，Example 改造待做。** |
+| **0.2.0** | 可选独立 product `TGLoggerUI`（进程内控制台）。不放进默认 `TGLogger`，避免只想打日志的 App 链到 SwiftUI。决策见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)。**进度（2026-09-15）：stream、`TGLoggerUI`、Example 改造均已落地，待发版。** |
 | **0.3.0** | `FileDestination`（轮转、体积上限）。仍是新 Destination，不改 Logger。 |
 | **1.0.0** | 至少有一个真实 App 用过后再锁公开 API。 |
 

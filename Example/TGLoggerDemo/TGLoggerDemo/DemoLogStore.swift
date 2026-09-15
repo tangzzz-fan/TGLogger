@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import TGLogger
+import TGLoggerUI
 
 enum AppLog: String, LogCategory {
     case auth
@@ -8,14 +9,14 @@ enum AppLog: String, LogCategory {
     case store
 }
 
-/// Composition root for the demo. Keeps `MemoryDestination` so the UI can snapshot records.
+/// Composition root for the demo. Holds the destinations and the emit actions;
+/// the log list UI comes from the TGLoggerUI product (`LogConsoleView`).
 /// This type lives in the example app, not in the TGLogger package.
 @Observable
 @MainActor
 final class DemoLogStore {
     let center: LogCenter
     let memory: MemoryDestination
-    private(set) var records: [LogRecord] = []
     private(set) var lastCorrelationID: String?
 
     var auth: Logger { center.logger(AppLog.auth) }
@@ -41,16 +42,10 @@ final class DemoLogStore {
             minimumLevel: .trace
         )
         center.logger(AppLog.auth).notice("demo launched")
-        refresh()
-    }
-
-    func refresh() {
-        records = memory.snapshot().reversed()
     }
 
     func clear() {
         memory.clear()
-        refresh()
     }
 
     func logLevels() {
@@ -61,7 +56,6 @@ final class DemoLogStore {
         auth.warning("retrying after timeout")
         auth.error("payment declined")
         auth.fault("unrecoverable store corruption")
-        refresh()
     }
 
     func simulateLogin() async {
@@ -80,14 +74,12 @@ final class DemoLogStore {
                 "retry": .public(.int(0))
             ])
         }
-        refresh()
     }
 
     func payTapped() {
         checkout.notice("pay tapped", metadata: [
             "amount": .public(.double(19.9))
         ])
-        refresh()
     }
 
     func burst() {
@@ -95,6 +87,5 @@ final class DemoLogStore {
         DispatchQueue.concurrentPerform(iterations: 40) { index in
             network.debug("heartbeat \(index)")
         }
-        refresh()
     }
 }

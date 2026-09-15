@@ -23,9 +23,9 @@ Not in 0.1.0: in-app SwiftUI console as a library product, file rotation, remote
 
 ## Example app
 
-Open [`Example/TGLoggerDemo/TGLoggerDemo.xcodeproj`](Example/TGLoggerDemo/TGLoggerDemo.xcodeproj). It is **not** a Swift package product: adding this repo via SPM only exposes the `TGLogger` library.
+Open [`Example/TGLoggerDemo/TGLoggerDemo.xcodeproj`](Example/TGLoggerDemo/TGLoggerDemo.xcodeproj). It is **not** a Swift package product: adding this repo via SPM exposes the `TGLogger` library and the optional `TGLoggerUI` console, never a demo target.
 
-The demo bootstraps `OSLogDestination` + `PrintDestination` + `MemoryDestination`, then exercises levels, `LogCategory`, `Logger.with(metadata:)`, and `LogContext.$correlationID`.
+The demo bootstraps `OSLogDestination` + `PrintDestination` + `MemoryDestination`, exercises levels, `LogCategory`, `Logger.with(metadata:)` and `LogContext.$correlationID`, and embeds `LogConsoleView` from `TGLoggerUI` under "Open log console".
 
 ## Installation
 
