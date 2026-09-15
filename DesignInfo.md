@@ -59,10 +59,10 @@ PII 放进 metadata，不要插进 message。
 
 ---
 
-## 5. 非目标（0.1.0）
+## 5. 非目标
 
-- 把 SwiftUI 控制台做成 **package product**（Demo 里用 `MemoryDestination.snapshot()` 自学即可）。为何 Demo 列表 ≠ 库控制台：见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)。
-- 文件轮转、远程上报、网络抓包
+- 默认 `TGLogger` product 依赖 SwiftUI（0.2.0 的控制台在可选 `TGLoggerUI`）。
+- 文件轮转、远程上报、网络 / WiFi 回传
 - `Logger` 方法变成 `async`
 - 公开 API 使用 `Any` 或 `fatalError`
 
@@ -75,11 +75,11 @@ PII 放进 metadata，不要插进 message。
 | 版本 | 内容 |
 |------|------|
 | **0.1.x** | 核心 API 冻结试用：`LogCenter` / `Logger` / Destination / 来源与 correlation ID。Example 只作教具。 |
-| **0.2.0** | 可选独立 product `TGLoggerUI`（进程内控制台）。不放进默认 `TGLogger`，避免只想打日志的 App 链到 SwiftUI。决策见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)。**进度（2026-09-15）：stream、`TGLoggerUI`、Example 改造均已落地，待发版。** |
-| **0.3.0** | `FileDestination`（轮转、体积上限）。仍是新 Destination，不改 Logger。 |
+| **0.2.0** | 可选独立 product `TGLoggerUI`；`MemoryDestination.makeRecordsStream`；Example 用控制台演示「与 Xcode 同一条记录、断链后仍及时」。见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)、[docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。 |
+| **0.3.0** | `FileDestination`（轮转、体积上限）：杀进程 / 会话结束后把日志拷走。不替代手机上的及时列表，也不做 WiFi 回传。 |
 | **1.0.0** | 至少有一个真实 App 用过后再锁公开 API。 |
 
-不单独开 Demo 仓库：Example 跟库同仓，但 **禁止** 写进 `Package.swift` 的 `products` / `targets`。SPM 「Add Package」只会看到 `TGLogger`。克隆仓库的人能看见 `Example/`，这是可接受的折中。
+不单独开 Demo 仓库：Example 跟库同仓，但 **禁止** 写进 `Package.swift` 的 `products` / `targets`。SPM 「Add Package」会看到 `TGLogger` 和可选的 `TGLoggerUI`，不会看到 Demo 工程。克隆仓库的人能看见 `Example/`，这是可接受的折中。
 
 相对 TG 系列现有 Demo 要避开的问题：
 

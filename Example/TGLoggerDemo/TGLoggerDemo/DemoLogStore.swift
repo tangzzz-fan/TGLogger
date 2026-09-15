@@ -1,12 +1,12 @@
 import Foundation
 import Observation
 import TGLogger
-import TGLoggerUI
 
 enum AppLog: String, LogCategory {
     case auth
     case network
     case store
+    case accessory
 }
 
 /// Composition root for the demo. Holds the destinations and the emit actions;
@@ -28,6 +28,8 @@ final class DemoLogStore {
             "screen": .public(.string("Checkout"))
         ])
     }
+
+    var accessory: Logger { center.logger(AppLog.accessory) }
 
     init() {
         let memory = MemoryDestination(capacity: 200)
@@ -87,5 +89,26 @@ final class DemoLogStore {
         DispatchQueue.concurrentPerform(iterations: 40) { index in
             network.debug("heartbeat \(index)")
         }
+    }
+
+    /// Typical hardware-session lines: they still reach Memory (and thus
+    /// `LogConsoleView`) after the debugger is detached.
+    func simulateAccessorySession() {
+        let sessionID = "acc-\(UUID().uuidString.prefix(6))"
+        LogContext.$correlationID.withValue(sessionID) {
+            accessory.notice("accessory session started", metadata: [
+                "protocol": .public(.string("com.example.hw"))
+            ])
+            accessory.debug("TX handshake")
+            accessory.debug("RX ack")
+            accessory.info("firmware reported", metadata: [
+                "version": .public(.string("1.4.2"))
+            ])
+            accessory.warning("retry packet 3")
+            accessory.info("sample committed", metadata: [
+                "count": .public(.int(12))
+            ])
+        }
+        lastCorrelationID = sessionID
     }
 }

@@ -15,11 +15,12 @@ iOS 17+, macOS 14+, tvOS 17+, watchOS 10+
 - **Call-site tracing**: `#fileID` / `#function` / `#line` / `#column` on every `LogRecord`
 - **Correlation IDs**: `LogContext.$correlationID` (`@TaskLocal`) inherited by child tasks
 - **Structured metadata**: typed `LogValue` (`string` / `int` / `double` / `bool`) with per-key privacy
-- **Destinations**: `OSLogDestination`, `PrintDestination`, `MemoryDestination` (ring buffer), `CapturingDestination` (tests)
+- **Destinations**: `OSLogDestination`, `PrintDestination`, `MemoryDestination` (ring buffer + live `AsyncStream`), `CapturingDestination` (tests)
+- **Optional `TGLoggerUI`**: in-process debug console (`LogConsoleView`) over a `MemoryDestination`; not linked unless you add that product
 - **Filtering**: `LogCenter.minimumLevel` plus per-destination floors; messages are `@autoclosure` so filtered calls skip string work
 - **Swift 6**: `Sendable` types, synchronous emission, no `MainActor` hop, no `Any`, no `fatalError` in the public API
 
-Not in 0.1.0: in-app SwiftUI console as a library product, file rotation, remote upload, network tracing.
+Not in 0.2.0: file rotation, remote upload, network tracing.
 
 ## Example app
 
@@ -31,8 +32,23 @@ The demo bootstraps `OSLogDestination` + `PrintDestination` + `MemoryDestination
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.1.0")
+    .package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.2.0")
 ]
+```
+
+Link `TGLogger` always. Add `TGLoggerUI` only for a debug console (typically `#if DEBUG`):
+
+```swift
+.product(name: "TGLogger", package: "TGLogger"),
+.product(name: "TGLoggerUI", package: "TGLogger"),
+```
+
+```swift
+#if DEBUG
+import TGLoggerUI
+// sheet / navigationDestination
+LogConsoleView(destination: memory)
+#endif
 ```
 
 ## Usage
@@ -87,4 +103,4 @@ logs.logger(category: "auth").info("hello")
 
 GitHub Actions runs `swift build` and `swift test` for pushes and PRs targeting `main`.
 
-See [DesignInfo.md](DesignInfo.md) for architecture and [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md) for why the example list is not a library console, and what `TGLoggerUI` will be in 0.2.0.
+See [DesignInfo.md](DesignInfo.md) for architecture, [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md) for the `TGLoggerUI` product split, and [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md) for viewing the same records on-device after detaching from Xcode.

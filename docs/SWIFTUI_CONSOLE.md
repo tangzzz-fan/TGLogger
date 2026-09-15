@@ -1,7 +1,7 @@
 # SwiftUI 进程内控制台 —— 口径对照与决策
 
-**状态**：决策记录（`TGLoggerUI` 尚未实现）
-**核对基线**：0.1.0 / commit `42016a5` / 2026-09-15
+**状态**：决策已落地（0.2.0：`TGLoggerUI` + stream + Example）
+**核对基线**：0.2.0 / 2026-09-16
 
 本文做两件事：
 
@@ -14,9 +14,9 @@
 
 ## 0. 三行速览
 
-- **结论**：全仓 10 处直接提及，**真分歧 0 处**。看着矛盾，是因为同一句话在说三层不同的东西 —— SPM product 层 / Example 工程层 / 未来能力层。
-- **影响**：0.1.0 的公开 product 保持零 SwiftUI；Example 的列表是教具，不是库；`TGLoggerUI` 排到 0.2.0 且是**可选**第二 product。
-- **细读建议**：只想知道「到底有没有矛盾」→ §1、§2；要动手做控制台 → §5–§7。
+- **结论**：全仓当时 10 处直接提及，**真分歧 0 处**。看着矛盾，是因为同一句话在说三层不同的东西 —— SPM product 层 / Example 工程层 / 可选 UI product 层。
+- **影响**：默认 `TGLogger` 仍零 SwiftUI；`TGLoggerUI` 是可选第二 product；Example 不是 product。断链 Xcode 后的及时日志见 [UNTETHERED_LOGGING.md](UNTETHERED_LOGGING.md)。
+- **细读建议**：只想知道「到底有没有矛盾」→ §1、§2；控制台规格 → §5–§7。
 
 ---
 
@@ -194,16 +194,9 @@ LogConsoleView(destination: memory)
 
 ## 8. 下一步
 
-当前发布是 **0.1.0**，基线已验证：`swift test` 19 个用例 / 6 个 suite 全绿（Swift 6.3.3 / macOS arm64）。
+**0.2.0 已发布。** 及时看现场用 `LogConsoleView`，不要做 WiFi 回传。见 [UNTETHERED_LOGGING.md](UNTETHERED_LOGGING.md)。
 
-建议顺序：
-
-1. **现在（文档）** —— 本文；0.1.x 不再扩 UI。
-2. **试用 0.1.x** —— 在真实 App 里只用 `Logger` + `OSLogDestination`。缺的是等级 / metadata / correlation，还是「必须看见列表」，用来判断 0.2 是否提前。
-3. **下一刀代码（0.2.0）** —— 先给 `MemoryDestination` 加 stream，再加 `TGLoggerUI`，最后让 Example 改用它。
-4. **再往后** —— `FileDestination`（0.3.0），与控制台无关。
-
-若下一步直接说「做控制台」，就按 §5–§7 开工，不再把 Demo 列表升格成库。
+再往后：`FileDestination`（0.3.0）只解决杀进程 / 会话结束后把文件拷出来，不替代手机上的即时列表。
 
 ---
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-16
+
 ### Fixed
 - `docs/` is no longer excluded by `.gitignore`: the bare `docs/` rule also matched `Docs/` on macOS case-insensitive filesystems, so hand-written docs silently never got committed. The directory is now lowercase `docs/` and README/DesignInfo links were updated.
 - CI: `workflow_dispatch` was nested under `pull_request` and could not be triggered manually.
@@ -14,9 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Example app now uses `TGLoggerUI`**: the demo links both products, replaces its hand-rolled record list with `LogConsoleView` (reachable via "Open log console"), and drops the manual "Refresh snapshot" flow.
 - **`TGLoggerUI` product** (optional, depends only on `TGLogger`): `LogConsoleView` (filter bar + newest-first list + copy/clear toolbar), `LogConsoleStore` (`@MainActor @Observable`, seeds from `snapshot()` then follows the live stream with seed-dedup, trims to the ring capacity), and `LogConsoleFilter` (level floor / category / text / correlation ID). DEBUG-console scope per `docs/SWIFTUI_CONSOLE.md` §5.
-- **`MemoryDestination.makeRecordsStream(bufferingPolicy:)`**: live tail as `AsyncStream<LogRecord>`. Yields records written after subscription (no replay of buffered history); multiple independent streams per destination; teardown on task cancellation; `clear()` keeps the stream alive. First slice of the 0.2.0 `TGLoggerUI` plan.
+- **`MemoryDestination.makeRecordsStream(bufferingPolicy:)`**: live tail as `AsyncStream<LogRecord>`. Yields records written after subscription (no replay of buffered history); multiple independent streams per destination; teardown on task cancellation; `clear()` keeps the stream alive.
 - CI guard that fails when a file under `docs/` exists on disk but is not tracked by git (defends against the ignore rule above).
 - `docs/devnotes/`: development notes index, template, and the first note documenting the `.gitignore` trap.
+- **Untethered logging**: `docs/UNTETHERED_LOGGING.md` plus Example copy. Same `LogRecord` as Xcode’s `print` window, live on-device via `LogConsoleView`, no Wi-Fi relay. Demo adds **Simulate accessory session**.
 
 ## [0.1.0] - 2026-09-15
 
