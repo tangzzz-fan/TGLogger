@@ -2,33 +2,35 @@
 
 [![CI](https://github.com/tangzzz-fan/TGLogger/actions/workflows/ci.yml/badge.svg)](https://github.com/tangzzz-fan/TGLogger/actions/workflows/ci.yml)
 
-A Swift 6 logging library for Apple platforms. Write logs synchronously like `print`, with levels, categories, call-site tracing, task-local correlation IDs, and pluggable destinations. The default sink is Unified Logging (`os.Logger`).
+面向 Apple 平台的 Swift 6 日志库。写法像 `print` 一样同步，但带等级、分类、调用来源、任务内关联 ID，以及可插拔出口。默认写入系统统一日志（`os.Logger`）。
 
-## Platforms
+## 平台
 
-iOS 17+, macOS 14+, tvOS 17+, watchOS 10+
+iOS 17+、macOS 14+、tvOS 17+、watchOS 10+
 
-## Features
+## 能力
 
-- **Levels**: `trace` / `debug` / `info` / `notice` / `warning` / `error` / `fault`
-- **Categories**: `subsystem` + `category`, plus a `LogCategory` protocol for typed enums
-- **Call-site tracing**: `#fileID` / `#function` / `#line` / `#column` on every `LogRecord`
-- **Correlation IDs**: `LogContext.$correlationID` (`@TaskLocal`) inherited by child tasks
-- **Structured metadata**: typed `LogValue` (`string` / `int` / `double` / `bool`) with per-key privacy
-- **Destinations**: `OSLogDestination`, `PrintDestination`, `MemoryDestination` (ring buffer + live `AsyncStream`), `CapturingDestination` (tests)
-- **Optional `TGLoggerUI`**: in-process debug console (`LogConsoleView`) over a `MemoryDestination`; not linked unless you add that product
-- **Filtering**: `LogCenter.minimumLevel` plus per-destination floors; messages are `@autoclosure` so filtered calls skip string work
-- **Swift 6**: `Sendable` types, synchronous emission, no `MainActor` hop, no `Any`, no `fatalError` in the public API
+- **等级**：`trace` / `debug` / `info` / `notice` / `warning` / `error` / `fault`
+- **分类**：`subsystem` + `category`；也可用 `LogCategory` 协议做成类型化枚举
+- **来源追踪**：每条 `LogRecord` 带 `#fileID` / `#function` / `#line` / `#column`
+- **关联 ID**：`LogContext.$correlationID`（`@TaskLocal`），子任务会继承
+- **结构化字段**：`LogValue` 为 `string` / `int` / `double` / `bool`，并可按键设置隐私
+- **出口**：`OSLogDestination`、`PrintDestination`、`MemoryDestination`（环形缓冲 + 实时 `AsyncStream`）、`CapturingDestination`（测试用）
+- **可选 `TGLoggerUI`**：基于 `MemoryDestination` 的进程内调试控制台（`LogConsoleView`）；不主动链接就不会带上
+- **过滤**：`LogCenter.minimumLevel` 与每个 Destination 自己的下限；`message` 用 `@autoclosure`，被丢掉时不拼字符串
+- **Swift 6**：`Sendable`、同步写出、不 hop `MainActor`、公开 API 不用 `Any` / `fatalError`
 
-Not in 0.2.0: file rotation, remote upload, network tracing.
+0.2.0 不做：文件轮转、远程上报、网络抓包 / WiFi 回传。
 
-## Example app
+## 示例工程
 
-Open [`Example/TGLoggerDemo/TGLoggerDemo.xcodeproj`](Example/TGLoggerDemo/TGLoggerDemo.xcodeproj). It is **not** a Swift package product: adding this repo via SPM exposes the `TGLogger` library and the optional `TGLoggerUI` console, never a demo target.
+打开 [`Example/TGLoggerDemo/TGLoggerDemo.xcodeproj`](Example/TGLoggerDemo/TGLoggerDemo.xcodeproj)。它**不是** Swift 包的 product：用 SPM 添加本仓库时只会看到 `TGLogger` 和可选的 `TGLoggerUI`，不会出现 Demo target。
 
-The demo bootstraps `OSLogDestination` + `PrintDestination` + `MemoryDestination`, exercises levels, `LogCategory`, `Logger.with(metadata:)` and `LogContext.$correlationID`, and embeds `LogConsoleView` from `TGLoggerUI` under "Open log console".
+Demo 会同时挂上 `OSLogDestination`、`PrintDestination`、`MemoryDestination`，演示等级、`LogCategory`、`Logger.with(metadata:)`、`LogContext.$correlationID`。点 **Open log console** 打开 `TGLoggerUI` 的 `LogConsoleView`。
 
-## Installation
+**和 Xcode 控制台是不是同一批日志：** 一次 `logger.info` 只生成一条 `LogRecord`，再分发给各个出口。Xcode 调试控制台主要是 `PrintDestination`（`print`）；手机上的及时列表是 `MemoryDestination`。内容相同，窗口不同。连硬件必须和 Xcode 断链时，Stop 调试器后 `print` 没了，应用内控制台仍会实时追加。详见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。
+
+## 安装
 
 ```swift
 dependencies: [
@@ -36,7 +38,7 @@ dependencies: [
 ]
 ```
 
-Link `TGLogger` always. Add `TGLoggerUI` only for a debug console (typically `#if DEBUG`):
+日常只链 `TGLogger`。调试控制台再加 `TGLoggerUI`（一般包在 `#if DEBUG`）：
 
 ```swift
 .product(name: "TGLogger", package: "TGLogger"),
@@ -51,7 +53,7 @@ LogConsoleView(destination: memory)
 #endif
 ```
 
-## Usage
+## 用法
 
 ```swift
 import TGLogger
@@ -82,11 +84,11 @@ let checkout = auth.with(metadata: ["screen": .public(.string("Checkout"))])
 checkout.notice("pay tapped")
 ```
 
-Release builds default `minimumLevel` to `.notice`. Debug builds default to `.debug` (`trace` stays opt-in).
+Release 构建默认 `minimumLevel` 为 `.notice`；Debug 默认为 `.debug`（`trace` 需显式放低）。
 
-Put secrets and user identifiers in metadata, not in the interpolated message string.
+密钥和用户标识放进 metadata，不要插进 message 字符串。
 
-## Testing
+## 测试
 
 ```swift
 let capturing = CapturingDestination()
@@ -99,8 +101,8 @@ logs.logger(category: "auth").info("hello")
 #expect(capturing.snapshot()[0].message == "hello")
 ```
 
-## Continuous Integration
+## 持续集成
 
-GitHub Actions runs `swift build` and `swift test` for pushes and PRs targeting `main`.
+推送到 `main` 的提交和 PR 会跑 GitHub Actions：`swift build` 与 `swift test`。
 
-See [DesignInfo.md](DesignInfo.md) for architecture, [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md) for the `TGLoggerUI` product split, and [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md) for viewing the same records on-device after detaching from Xcode.
+架构见 [DesignInfo.md](DesignInfo.md)；`TGLoggerUI` 为何单独成 product 见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)；断链 Xcode 后如何现场看日志见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。
