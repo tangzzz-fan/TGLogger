@@ -92,6 +92,10 @@ PII 放进 metadata，不要插进 message。
 
 ## 7. 后续接线（应用侧，不进本包）
 
+已有 Factory 时：`LogCenter` / `MemoryDestination` / `FileDestination` 用 singleton 注册，控制台与分享解析同一实例。见 [docs/FACTORY.md](docs/FACTORY.md)。本包不依赖 Factory。
+
+面向协议的 App 可在功能模块与本库之间自建端口 + 适配器（防腐层），见 [docs/ANTI_CORRUPTION.md](docs/ANTI_CORRUPTION.md)。不要把 `LogDestination` 当业务协议；本包不提供 `AppLogging`。
+
 TGReduxKitDebug 的 `(String) -> Void` 可接到：
 
 ```swift

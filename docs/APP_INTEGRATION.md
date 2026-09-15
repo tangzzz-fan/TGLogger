@@ -35,6 +35,10 @@ let logs = LogCenter(
 
 Release 可以去掉 `memory`，只留 `OSLogDestination()`（再加 `file` 若你要测完拷文件）。不要把 `PrintDestination` 当成断链后的监视器。
 
+项目里已经用了 Factory（`FactoryKit` / `import Factory`）时，把 `LogCenter`、`MemoryDestination`、`FileDestination` 注册成 **singleton**，控制台和分享必须解析到挂在 center 上的同一实例。完整写法见 [FACTORY.md](FACTORY.md)。TGLogger **不**依赖 Factory。
+
+面向协议开发、想在功能和本库之间加防腐层时：协议放在应用模块，composition root 再接到 `Logger`。见 [ANTI_CORRUPTION.md](ANTI_CORRUPTION.md)。
+
 ## 3. 打日志
 
 全程用 `logs.logger(...)`，不要用裸 `print`。硬件协议、握手、重试放进 `LogCategory`（例如 `accessory`），需要串起来的请求用 `LogContext.$correlationID`。

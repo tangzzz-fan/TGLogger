@@ -12,7 +12,7 @@ This Xcode project is **not** part of the Swift package. `Package.swift` publish
 
 ## Same records as Xcode (untethered)
 
-One `logger.info` builds one `LogRecord` and writes it to Print (Xcode) and Memory (the in-app console). They are the same events, not a second reconstructed log.
+One `logger.info` builds one `LogRecord` and writes it to Print (Xcode), Memory (the in-app console), and File (share after kill). They are the same events, not a second reconstructed log.
 
 1. Tap **Simulate accessory session**, then compare Xcode’s console with **Open log console**.
 2. **Product → Stop** (or unplug from the Mac). `print` is gone; the in-app list still tails live. No Wi-Fi relay.

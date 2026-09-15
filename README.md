@@ -106,4 +106,4 @@ logs.logger(category: "auth").info("hello")
 
 推送到 `main` 的提交和 PR 会跑 GitHub Actions：`swift build` 与 `swift test`。
 
-架构见 [DesignInfo.md](DesignInfo.md)；真实 App 接线见 [docs/APP_INTEGRATION.md](docs/APP_INTEGRATION.md)；`TGLoggerUI` 为何单独成 product 见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)；断链 Xcode 后如何现场看日志见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。
+架构见 [DesignInfo.md](DesignInfo.md)；真实 App 接线见 [docs/APP_INTEGRATION.md](docs/APP_INTEGRATION.md)；已有 Factory 时见 [docs/FACTORY.md](docs/FACTORY.md)；面向协议 + 防腐层见 [docs/ANTI_CORRUPTION.md](docs/ANTI_CORRUPTION.md)；`TGLoggerUI` 为何单独成 product 见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)；断链 Xcode 后如何现场看日志见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。

@@ -12,7 +12,7 @@ struct ContentView: View {
                         Text("SPM consumers link TGLogger and optional TGLoggerUI. This app is an Example target, not a package product.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        Text("Bootstrap: OSLog + Print + Memory. One `LogRecord` is fanned out to every destination.")
+                        Text("Bootstrap: OSLog + Print + Memory + File. One `LogRecord` is fanned out to every destination.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
