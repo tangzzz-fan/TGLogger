@@ -15,14 +15,22 @@ let package = Package(
             name: "TGLogger",
             targets: ["TGLogger"]
         ),
+        .library(
+            name: "TGLoggerUI",
+            targets: ["TGLoggerUI"]
+        ),
     ],
     targets: [
         .target(
             name: "TGLogger"
         ),
+        .target(
+            name: "TGLoggerUI",
+            dependencies: ["TGLogger"]
+        ),
         .testTarget(
             name: "TGLoggerTests",
-            dependencies: ["TGLogger"]
+            dependencies: ["TGLogger", "TGLoggerUI"]
         ),
     ],
     swiftLanguageModes: [.v6]

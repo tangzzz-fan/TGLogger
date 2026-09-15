@@ -2,6 +2,7 @@ import Foundation
 import os
 import Testing
 @testable import TGLogger
+import TGLoggerUI
 
 private struct FixedClock: LogClock {
     let date: Date
@@ -414,5 +415,101 @@ struct MemoryStreamTests {
 
         let messages = await task.value
         #expect(messages == ["before clear", "after clear"])
+    }
+}
+
+@Suite("LogConsoleStore")
+struct LogConsoleStoreTests {
+    /// Polls until `condition` holds (up to ~2s) so stream delivery is deterministic.
+    @MainActor
+    private func waitFor(_ condition: @autoclosure () -> Bool) async -> Bool {
+        for _ in 0..<200 {
+            if condition() { return true }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        return false
+    }
+
+    @MainActor
+    @Test("Store seeds from snapshot and then follows the live stream")
+    func seedsAndFollows() async {
+        let memory = MemoryDestination(capacity: 8)
+        let logger = makeCenter([memory]).logger(category: "console")
+        logger.info("history")
+
+        let store = LogConsoleStore(destination: memory)
+        #expect(store.records.map(\.message) == ["history"])
+
+        logger.info("live")
+        let followed = await waitFor(store.records.count == 2)
+        #expect(followed)
+        #expect(store.records.map(\.message) == ["live", "history"])
+    }
+
+    @MainActor
+    @Test("Store trims to the destination capacity, newest first")
+    func trimsToCapacity() async {
+        let memory = MemoryDestination(capacity: 3)
+        let logger = makeCenter([memory]).logger(category: "console")
+
+        let store = LogConsoleStore(destination: memory)
+        for index in 1...5 {
+            logger.info("n\(index)")
+        }
+
+        let trimmed = await waitFor(store.records.count == 3)
+        #expect(trimmed)
+        #expect(store.records.map(\.message) == ["n5", "n4", "n3"])
+    }
+
+    @MainActor
+    @Test("Filter applies level floor, category, text, and correlation ID")
+    func filtering() async {
+        let memory = MemoryDestination(capacity: 32)
+        let center = makeCenter([memory])
+        let auth = center.logger(category: "auth")
+        let net = center.logger(category: "network")
+
+        let store = LogConsoleStore(destination: memory)
+
+        LogContext.$correlationID.withValue("req-1") {
+            auth.info("login ok")
+            net.warning("slow retry")
+        }
+        auth.error("payment declined", metadata: ["code": .public(.int(500))])
+        _ = await waitFor(store.records.count == 3)
+
+        var filter = LogConsoleFilter()
+        #expect(store.filteredRecords(using: filter).count == 3)
+
+        filter.minimumLevel = .warning
+        #expect(store.filteredRecords(using: filter).count == 2)
+
+        filter.category = "auth"
+        #expect(store.filteredRecords(using: filter).map(\.message) == ["payment declined"])
+
+        filter = LogConsoleFilter(text: "slow")
+        #expect(store.filteredRecords(using: filter).map(\.message) == ["slow retry"])
+
+        filter = LogConsoleFilter(correlationID: "req-1")
+        #expect(store.filteredRecords(using: filter).count == 2)
+
+        filter = LogConsoleFilter(text: "500")
+        #expect(store.filteredRecords(using: filter).map(\.message) == ["payment declined"])
+    }
+
+    @MainActor
+    @Test("clear empties both the store and the destination")
+    func clearBoth() async {
+        let memory = MemoryDestination(capacity: 8)
+        let logger = makeCenter([memory]).logger(category: "console")
+
+        let store = LogConsoleStore(destination: memory)
+        logger.info("one")
+        _ = await waitFor(store.records.count == 1)
+
+        store.clear()
+        #expect(store.records.isEmpty)
+        #expect(memory.snapshot().isEmpty)
     }
 }
