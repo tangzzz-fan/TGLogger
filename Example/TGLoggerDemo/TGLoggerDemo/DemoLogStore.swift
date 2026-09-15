@@ -17,6 +17,7 @@ enum AppLog: String, LogCategory {
 final class DemoLogStore {
     let center: LogCenter
     let memory: MemoryDestination
+    let file: FileDestination
     private(set) var lastCorrelationID: String?
 
     var auth: Logger { center.logger(AppLog.auth) }
@@ -33,13 +34,21 @@ final class DemoLogStore {
 
     init() {
         let memory = MemoryDestination(capacity: 200)
+        let file = FileDestination(
+            directory: FileDestination.cachesDirectory(folderName: "TGLoggerDemo"),
+            maxFileSize: 64_000,
+            maxFileCount: 3,
+            minimumLevel: .trace
+        )
         self.memory = memory
+        self.file = file
         self.center = LogCenter(
             subsystem: Bundle.main.bundleIdentifier ?? "com.tango.TGLoggerDemo",
             destinations: [
                 OSLogDestination(),
                 PrintDestination(minimumLevel: .debug),
-                memory
+                memory,
+                file
             ],
             minimumLevel: .trace
         )

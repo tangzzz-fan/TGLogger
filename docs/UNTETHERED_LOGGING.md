@@ -30,11 +30,13 @@ import TGLoggerUI
 #endif
 
 let memory = MemoryDestination(capacity: 4000)
+let file = FileDestination(directory: FileDestination.cachesDirectory())
 let logs = LogCenter(
     subsystem: Bundle.main.bundleIdentifier ?? "app",
     destinations: [
         OSLogDestination(),
-        memory
+        memory,
+        file
     ]
 )
 
@@ -59,7 +61,7 @@ Example 工程里的 **Simulate accessory session** + **Open log console** 就�
 
 1. 有没有把同一个 `MemoryDestination` 实例交给 `LogCenter` **和** `LogConsoleView`。
 2. `LogCenter.minimumLevel` 是否把硬件协议的 `debug`/`trace` 滤掉了（DEBUG 默认是 `debug`，`trace` 要显式放低）。
-3. 进程被杀掉则内存缓冲清空——这是「及时看现场」的代价。若还要**杀进程之后**再看，那是 0.3.0 `FileDestination` 的事，不是本场景的及时性。
+3. 进程被杀掉则内存缓冲清空——这是「及时看现场」的代价。若还要**杀进程之后**再看，把同一个 `LogCenter` 再挂上 `FileDestination`，会话结束后用系统分享把 `currentFileURL` 拷走（Demo 里的 **Share log file**）。
 
 ---
 
@@ -69,4 +71,4 @@ Example 工程里的 **Simulate accessory session** + **Open log console** 就�
 - 把控制台塞进默认 `TGLogger` product。
 - 为了连硬件去改 `Logger` 变成 `async`。
 
-`FileDestination` 仍列在 0.3.0：只解决「会话结束或崩溃后把文件拷出来」，不替代手机上的即时列表。
+`FileDestination` 只解决「会话结束或崩溃后把文件拷出来」，不替代手机上的即时列表，也不做 WiFi 回传。

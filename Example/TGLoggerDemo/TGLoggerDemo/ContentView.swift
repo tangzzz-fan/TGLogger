@@ -77,6 +77,19 @@ struct ContentView: View {
                 } footer: {
                     Text("Stop the debugger, tap Simulate accessory session, then come back here — new lines should still appear.")
                 }
+
+                Section {
+                    LabeledContent("Active file") {
+                        Text(store.file.currentFileURL.lastPathComponent)
+                            .font(.caption)
+                            .monospaced()
+                    }
+                    ShareLink("Share log files", items: store.file.existingFileURLs())
+                } header: {
+                    Text("On-disk log")
+                } footer: {
+                    Text("FileDestination survives process kill. Live viewing is still the in-app console, not this file.")
+                }
             }
             .navigationTitle("TGLogger Demo")
         }

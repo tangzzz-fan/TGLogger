@@ -196,7 +196,7 @@ LogConsoleView(destination: memory)
 
 **0.2.0 已发布。** 及时看现场用 `LogConsoleView`，不要做 WiFi 回传。见 [UNTETHERED_LOGGING.md](UNTETHERED_LOGGING.md)。
 
-再往后：`FileDestination`（0.3.0）只解决杀进程 / 会话结束后把文件拷出来，不替代手机上的即时列表。
+`FileDestination`（0.3.0）只解决杀进程 / 会话结束后把文件拷出来。
 
 ---
 

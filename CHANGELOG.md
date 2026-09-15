@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-16
+
+### Added
+- **`FileDestination`**: UTF-8 line log on disk with size-based rotation (`maxFileSize` / `maxFileCount`). Synchronous, lock-serialized, no `MainActor` hop. `existingFileURLs()` / `currentFileURL` for share-sheet export. Example adds **Share log files**.
+- **`docs/APP_INTEGRATION.md`**: DEBUG + 连硬件时的接线清单（控制台及时看、文件事后拷）。
+
 ## [0.2.0] - 2026-09-16
 
 ### Fixed

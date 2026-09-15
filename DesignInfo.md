@@ -62,11 +62,11 @@ PII 放进 metadata，不要插进 message。
 ## 5. 非目标
 
 - 默认 `TGLogger` product 依赖 SwiftUI（0.2.0 的控制台在可选 `TGLoggerUI`）。
-- 文件轮转、远程上报、网络 / WiFi 回传
+- 远程上报、网络抓包 / WiFi 回传
 - `Logger` 方法变成 `async`
 - 公开 API 使用 `Any` 或 `fatalError`
 
-文件与远程应做成新的 `LogDestination`，不必改 `Logger`。
+文件落盘用 `FileDestination`；远程通道仍不进本包。
 
 ---
 

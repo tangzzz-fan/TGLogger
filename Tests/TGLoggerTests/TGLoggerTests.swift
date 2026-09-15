@@ -513,3 +513,131 @@ struct LogConsoleStoreTests {
         #expect(memory.snapshot().isEmpty)
     }
 }
+
+@Suite("FileDestination")
+struct FileDestinationTests {
+    private func makeLogDir() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TGLogger-file-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private func combinedText(_ destination: FileDestination) throws -> String {
+        try destination.existingFileURLs()
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined()
+    }
+
+    @Test("Writes formatted lines to the active file")
+    func writesLines() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(
+            directory: dir,
+            maxFileSize: 50_000,
+            maxFileCount: 2,
+            minimumLevel: .trace
+        )
+        let logger = makeCenter(
+            [destination],
+            clock: FixedClock(date: Date(timeIntervalSince1970: 0))
+        ).logger(category: "file")
+
+        logger.info("alpha", metadata: ["n": .public(.int(1))])
+        destination.close()
+
+        let text = try String(contentsOf: destination.currentFileURL, encoding: .utf8)
+        #expect(text.contains("alpha"))
+        #expect(text.contains("INFO"))
+        #expect(text.contains("[file]"))
+        #expect(text.contains("n=1"))
+        #expect(destination.existingFileURLs() == [destination.currentFileURL])
+    }
+
+    @Test("Rotates when the active file would exceed maxFileSize")
+    func rotates() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(
+            directory: dir,
+            fileName: "rot",
+            maxFileSize: 180,
+            maxFileCount: 3,
+            minimumLevel: .trace
+        )
+        let logger = makeCenter([destination]).logger(category: "file")
+        for index in 0..<40 {
+            logger.info("line-\(index)")
+        }
+        destination.close()
+
+        #expect(destination.existingFileURLs().count >= 2)
+        let text = try combinedText(destination)
+        #expect(text.contains("line-39"))
+        #expect(FileManager.default.fileExists(atPath: dir.appendingPathComponent("rot.1.log").path))
+    }
+
+    @Test("Keeps at most maxFileCount files")
+    func respectsFileCount() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(
+            directory: dir,
+            fileName: "cap",
+            maxFileSize: 80,
+            maxFileCount: 2,
+            minimumLevel: .trace
+        )
+        let logger = makeCenter([destination]).logger(category: "file")
+        for index in 0..<80 {
+            logger.info("x\(index)")
+        }
+        destination.close()
+
+        #expect(destination.existingFileURLs().count <= 2)
+    }
+
+    @Test("maxFileCount of 1 truncates instead of unbounded growth")
+    func singleFileTruncates() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(
+            directory: dir,
+            fileName: "one",
+            maxFileSize: 80,
+            maxFileCount: 1,
+            minimumLevel: .trace
+        )
+        let logger = makeCenter([destination]).logger(category: "file")
+        for index in 0..<40 {
+            logger.info("only-\(index)")
+        }
+        destination.close()
+
+        #expect(destination.existingFileURLs() == [destination.currentFileURL])
+        let text = try String(contentsOf: destination.currentFileURL, encoding: .utf8)
+        #expect(text.contains("only-39"))
+    }
+
+    @Test("Concurrent writes stay on disk without crashing")
+    func concurrentWrites() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(
+            directory: dir,
+            maxFileSize: 200_000,
+            maxFileCount: 3,
+            minimumLevel: .trace
+        )
+        let logger = makeCenter([destination]).logger(category: "file")
+
+        DispatchQueue.concurrentPerform(iterations: 200) { index in
+            logger.info("n=\(index)")
+        }
+        destination.close()
+
+        let text = try combinedText(destination)
+        #expect(text.components(separatedBy: "\n").filter { $0.contains("n=") }.count == 200)
+    }
+}

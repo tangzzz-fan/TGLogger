@@ -15,18 +15,18 @@ iOS 17+、macOS 14+、tvOS 17+、watchOS 10+
 - **来源追踪**：每条 `LogRecord` 带 `#fileID` / `#function` / `#line` / `#column`
 - **关联 ID**：`LogContext.$correlationID`（`@TaskLocal`），子任务会继承
 - **结构化字段**：`LogValue` 为 `string` / `int` / `double` / `bool`，并可按键设置隐私
-- **出口**：`OSLogDestination`、`PrintDestination`、`MemoryDestination`（环形缓冲 + 实时 `AsyncStream`）、`CapturingDestination`（测试用）
+- **出口**：`OSLogDestination`、`PrintDestination`、`MemoryDestination`（环形缓冲 + 实时 `AsyncStream`）、`FileDestination`（落盘 + 按大小轮转）、`CapturingDestination`（测试用）
 - **可选 `TGLoggerUI`**：基于 `MemoryDestination` 的进程内调试控制台（`LogConsoleView`）；不主动链接就不会带上
 - **过滤**：`LogCenter.minimumLevel` 与每个 Destination 自己的下限；`message` 用 `@autoclosure`，被丢掉时不拼字符串
 - **Swift 6**：`Sendable`、同步写出、不 hop `MainActor`、公开 API 不用 `Any` / `fatalError`
 
-0.2.0 不做：文件轮转、远程上报、网络抓包 / WiFi 回传。
+未做：远程上报、网络抓包 / WiFi 回传。及时看现场用 `TGLoggerUI`；杀进程后再看用 `FileDestination`。
 
 ## 示例工程
 
 打开 [`Example/TGLoggerDemo/TGLoggerDemo.xcodeproj`](Example/TGLoggerDemo/TGLoggerDemo.xcodeproj)。它**不是** Swift 包的 product：用 SPM 添加本仓库时只会看到 `TGLogger` 和可选的 `TGLoggerUI`，不会出现 Demo target。
 
-Demo 会同时挂上 `OSLogDestination`、`PrintDestination`、`MemoryDestination`，演示等级、`LogCategory`、`Logger.with(metadata:)`、`LogContext.$correlationID`。点 **Open log console** 打开 `TGLoggerUI` 的 `LogConsoleView`。
+Demo 会同时挂上 `OSLogDestination`、`PrintDestination`、`MemoryDestination`、`FileDestination`，演示等级、`LogCategory`、`Logger.with(metadata:)`、`LogContext.$correlationID`。点 **Open log console** 打开 `TGLoggerUI` 的 `LogConsoleView`；**Share log files** 可把落盘文件拷走（杀进程后仍在）。
 
 **和 Xcode 控制台是不是同一批日志：** 一次 `logger.info` 只生成一条 `LogRecord`，再分发给各个出口。Xcode 调试控制台主要是 `PrintDestination`（`print`）；手机上的及时列表是 `MemoryDestination`。内容相同，窗口不同。连硬件必须和 Xcode 断链时，Stop 调试器后 `print` 没了，应用内控制台仍会实时追加。详见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。
 
@@ -34,7 +34,7 @@ Demo 会同时挂上 `OSLogDestination`、`PrintDestination`、`MemoryDestinatio
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.2.0")
+    .package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.3.0")
 ]
 ```
 
@@ -62,7 +62,8 @@ let logs = LogCenter(
     subsystem: Bundle.main.bundleIdentifier ?? "TGLogger",
     destinations: [
         OSLogDestination(),
-        MemoryDestination(capacity: 2000)
+        MemoryDestination(capacity: 2000),
+        FileDestination(directory: FileDestination.cachesDirectory())
     ]
 )
 
@@ -105,4 +106,4 @@ logs.logger(category: "auth").info("hello")
 
 推送到 `main` 的提交和 PR 会跑 GitHub Actions：`swift build` 与 `swift test`。
 
-架构见 [DesignInfo.md](DesignInfo.md)；`TGLoggerUI` 为何单独成 product 见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)；断链 Xcode 后如何现场看日志见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。
+架构见 [DesignInfo.md](DesignInfo.md)；真实 App 接线见 [docs/APP_INTEGRATION.md](docs/APP_INTEGRATION.md)；`TGLoggerUI` 为何单独成 product 见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)；断链 Xcode 后如何现场看日志见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。

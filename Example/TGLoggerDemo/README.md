@@ -17,6 +17,7 @@ One `logger.info` builds one `LogRecord` and writes it to Print (Xcode) and Memo
 1. Tap **Simulate accessory session**, then compare Xcode’s console with **Open log console**.
 2. **Product → Stop** (or unplug from the Mac). `print` is gone; the in-app list still tails live. No Wi-Fi relay.
 3. Copy from the console toolbar if you need to take a snippet off the phone.
+4. **Share log files** sends on-disk `FileDestination` logs (still there after the app is killed).
 
 Details: [docs/UNTETHERED_LOGGING.md](../../docs/UNTETHERED_LOGGING.md).
 
