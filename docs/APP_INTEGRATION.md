@@ -45,13 +45,16 @@ Release 可以去掉 `memory`，只留 `OSLogDestination()`（再加 `file` 若�
 
 ## 4. 现场看（及时）
 
-入口必须在**不连 Xcode** 时能打开（调试页 / 连点版本号），不要依赖 LLDB：
+入口必须在**不连 Xcode** 时能打开（调试页 / 连点版本号 / **摇一摇**），不要依赖 LLDB：
 
 ```swift
 #if DEBUG
-LogConsoleView(destination: memory)
+ContentView()
+    .logConsoleOnShake(destination: memory)
 #endif
 ```
+
+`.logConsoleOnShake` 只在 **DEBUG iOS** 生效（Release / 其它平台是空操作）。系统「摇一摇撤销」会抢走事件，DEBUG 下设 `UIApplication.shared.applicationSupportsShakeToEdit = false`。手机平放连硬件时仍保留按钮。自定义 `UIWindow` 可在 `motionEnded(.motionShake)` 里调用 `LogConsoleShake.notify()`（FLEX 同类接法）。
 
 这和 Xcode 控制台是同一条 `LogRecord`，只是窗口换成手机。详见 [UNTETHERED_LOGGING.md](UNTETHERED_LOGGING.md)。
 

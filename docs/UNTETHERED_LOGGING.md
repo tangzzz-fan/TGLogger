@@ -42,7 +42,8 @@ let logs = LogCenter(
 
 #if DEBUG
 // 调试菜单 / 连点版本号 / 摇一摇 → 推出
-LogConsoleView(destination: memory)
+ContentView()
+    .logConsoleOnShake(destination: memory)
 #endif
 ```
 
@@ -50,10 +51,14 @@ LogConsoleView(destination: memory)
 
 - `PrintDestination` 在断链场合并上没有意义，可以不加。
 - 环形缓冲按硬件会话长度加容量（几千条），避免刷协议日志时把关键错误挤掉。
-- 入口必须能在**不连 Xcode** 时打开：应用内 DEBUG 页，不要依赖 LLDB。
+- 入口必须能在**不连 Xcode** 时打开：应用内 DEBUG 页或摇一摇，不要依赖 LLDB。
+- **摇一摇**（iOS DEBUG）：与 FLEX / CocoaDebug 相同，走 `UIResponder.motionEnded(.motionShake)`。TGLoggerUI 用 `.logConsoleOnShake(destination:)`，不替换 App 的 `UIWindow`、不在 `+load` 自动挂载。再摇一次关闭。Release 与非 iOS 为空操作。
+- 系统「摇一摇撤销」会先吃掉 motion：DEBUG 下设 `applicationSupportsShakeToEdit = false`。
+- 手机平放在桌上连配件时摇不了，**按钮入口仍要留**。
+- 模拟器：Device → Shake。
 - 控制台已有过滤和 Copy。需要把一段日志拷到备忘录 / 隔空投送时用 Copy，这是人触发的带走，不是日志通道回传。
 
-Example 工程里的 **Simulate accessory session** + **Open log console** 就是这个模型：先对比 Xcode 与手机列表，再 Product → Stop，列表仍会追加。
+Example 工程里的 **Simulate accessory session** + **Open log console** / **摇一摇** 就是这个模型：先对比 Xcode 与手机列表，再 Product → Stop，列表仍会追加。
 
 ---
 

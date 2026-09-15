@@ -26,7 +26,7 @@ iOS 17+、macOS 14+、tvOS 17+、watchOS 10+
 
 打开 [`Example/TGLoggerDemo/TGLoggerDemo.xcodeproj`](Example/TGLoggerDemo/TGLoggerDemo.xcodeproj)。它**不是** Swift 包的 product：用 SPM 添加本仓库时只会看到 `TGLogger` 和可选的 `TGLoggerUI`，不会出现 Demo target。
 
-Demo 会同时挂上 `OSLogDestination`、`PrintDestination`、`MemoryDestination`、`FileDestination`，演示等级、`LogCategory`、`Logger.with(metadata:)`、`LogContext.$correlationID`。点 **Open log console** 打开 `TGLoggerUI` 的 `LogConsoleView`；**Share log files** 可把落盘文件拷走（杀进程后仍在）。
+Demo 会同时挂上 `OSLogDestination`、`PrintDestination`、`MemoryDestination`、`FileDestination`，演示等级、`LogCategory`、`Logger.with(metadata:)`、`LogContext.$correlationID`。点 **Open log console** 或 **摇一摇**（DEBUG iOS）打开 `TGLoggerUI` 的 `LogConsoleView`；**Share log files** 可把落盘文件拷走（杀进程后仍在）。
 
 **和 Xcode 控制台是不是同一批日志：** 一次 `logger.info` 只生成一条 `LogRecord`，再分发给各个出口。Xcode 调试控制台主要是 `PrintDestination`（`print`）；手机上的及时列表是 `MemoryDestination`。内容相同，窗口不同。连硬件必须和 Xcode 断链时，Stop 调试器后 `print` 没了，应用内控制台仍会实时追加。详见 [docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。
 
@@ -48,8 +48,9 @@ dependencies: [
 ```swift
 #if DEBUG
 import TGLoggerUI
-// sheet / navigationDestination
-LogConsoleView(destination: memory)
+// 调试菜单按钮，或根视图摇一摇（仅 DEBUG iOS；Release 为空操作）
+ContentView()
+    .logConsoleOnShake(destination: memory)
 #endif
 ```
 

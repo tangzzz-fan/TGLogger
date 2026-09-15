@@ -75,7 +75,7 @@ PII 放进 metadata，不要插进 message。
 | 版本 | 内容 |
 |------|------|
 | **0.1.x** | 核心 API 冻结试用：`LogCenter` / `Logger` / Destination / 来源与 correlation ID。Example 只作教具。 |
-| **0.2.0** | 可选独立 product `TGLoggerUI`；`MemoryDestination.makeRecordsStream`；Example 用控制台演示「与 Xcode 同一条记录、断链后仍及时」。见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)、[docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。 |
+| **0.2.0** | 可选独立 product `TGLoggerUI`；`MemoryDestination.makeRecordsStream`；Example 用控制台演示「与 Xcode 同一条记录、断链后仍及时」。iOS DEBUG 可用 `.logConsoleOnShake`。见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)、[docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。 |
 | **0.3.0** | `FileDestination`（轮转、体积上限）：杀进程 / 会话结束后把日志拷走。不替代手机上的及时列表，也不做 WiFi 回传。 |
 | **1.0.0** | 至少有一个真实 App 用过后再锁公开 API。 |
 

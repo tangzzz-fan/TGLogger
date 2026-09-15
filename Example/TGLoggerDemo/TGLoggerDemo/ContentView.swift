@@ -26,7 +26,7 @@ struct ContentView: View {
                         Text("Xcode’s debug console is mostly PrintDestination (`print`). The in-app console is MemoryDestination — the same LogRecord, another window. No Wi-Fi relay.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        Text("1. Emit below, then compare Xcode with Open log console.\n2. Product → Stop (or unplug). Print is gone; the in-app list still tails live.\n3. Accessory session is the hardware-shaped example of that flow.")
+                        Text("1. Emit below, then compare Xcode with Open log console (or shake).\n2. Product → Stop (or unplug). Print is gone; the in-app list still tails live.\n3. Accessory session is the hardware-shaped example of that flow.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -75,7 +75,7 @@ struct ContentView: View {
                 } header: {
                     Text("Console")
                 } footer: {
-                    Text("Stop the debugger, tap Simulate accessory session, then come back here — new lines should still appear.")
+                    Text("DEBUG iOS: shake to toggle the full-screen console (Device → Shake in Simulator). The button stays for a phone sitting on a bench. Stop the debugger, emit, then reopen — new lines should still appear.")
                 }
 
                 Section {

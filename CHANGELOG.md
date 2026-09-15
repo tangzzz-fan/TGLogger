@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`docs/FACTORY.md`**: 应用已用 Factory 时如何注册 `LogCenter` / destination（singleton、同一实例、测试替换）。不把 Factory 加进本包。
 - **`docs/ANTI_CORRUPTION.md`**: 面向协议的 App 如何在功能模块与 TGLogger 之间自建端口 + 适配器。不把业务协议加进本包。
+- **`LogConsoleView` shake entry**: `.logConsoleOnShake(destination:)` on DEBUG iOS (no-op elsewhere). Toggle full-screen console; keep a button for bench-mounted hardware. Example disables shake-to-undo.
 
 ### Fixed
 - Example `ContentView` 启动说明补上 `FileDestination`（与实际 bootstrap 一致）。

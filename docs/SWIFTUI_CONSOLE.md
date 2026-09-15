@@ -113,13 +113,14 @@ flowchart LR
 - 清空缓冲、复制一条 / 导出当前过滤结果为文本。
 - 新日志进来后列表自动更新（见 §6），不要靠用户按 Refresh。
 - iOS 17+ 与 macOS 14+ 的 SwiftUI。tvOS 可以后做。watchOS 不做（屏幕与交互不够）。
+- **iOS DEBUG 摇一摇入口**（见下方「入口」）：任意界面打开控制台，不连 Xcode。不是 Pulse / FLEX 那套网络抓包。
 
 ### 不做
 
 - 改 `Logger` 的调用方式，或让 `write` 变成 `async`。
 - 把控制台塞进默认 `TGLogger` product。
 - 网络、WebSocket、数据库、文件日志查看器。
-- 生产环境默认开启。入口应 `#if DEBUG`，或由 App 的调试菜单显式 `sheet` / `navigationDestination`。
+- 生产环境默认开启。入口应 `#if DEBUG`，或由 App 的调试菜单显式 `sheet` / `navigationDestination` / 摇一摇（`.logConsoleOnShake`，仅 DEBUG iOS）。
 
 ### SPM 形态
 
@@ -181,14 +182,31 @@ let logs = LogCenter(
     subsystem: bundleID,
     destinations: [OSLogDestination(), memory]
 )
-// 调试页
+// 调试页或根视图
 LogConsoleView(destination: memory)
+ContentView()
+    .logConsoleOnShake(destination: memory)
 #endif
 ```
 
 `LogConsoleView` 只吃 `MemoryDestination`（或将来一个更窄的 `LogRecording` 协议），不吃整个 `LogCenter`。这样测试可以塞假记录源，而生产 `LogCenter` 仍然不感知 UI。
 
 与 FeatureFlag 的 `FeatureFlagDebugView` 同一类东西：可选、DEBUG、独立模块。
+
+### 入口：摇一摇（对照现有 iOS logger）
+
+FLEX、CocoaDebug、不少 in-app 调试器都用摇一摇：`UIWindow` / 第一响应者上的 `motionEnded(.motionShake)`，`#if DEBUG` 包起来，**不连 Xcode 也能从当前界面打开**。这和断链连硬件是同一类需求。
+
+TGLoggerUI 对齐的是这个**入口习惯**，不是 FLEX 的对象浏览器或 CocoaDebug 的网络气泡：
+
+| | FLEX / CocoaDebug | TGLoggerUI |
+|--|-------------------|------------|
+| 手势 | 摇一摇（模拟器 Device → Shake） | 相同 |
+| 范围 | 视图树 / 网络 / 沙盒 | 只有 `LogConsoleView` |
+| 挂载 | 常换 `UIWindow` 或 `+load` 自启 | 根视图 `.logConsoleOnShake(destination:)`，不抢 window |
+| Release | 不链或 `#if DEBUG` | 修饰符编译为空操作；product 仍不要链进 Release |
+
+自定义 `UIWindow` 的 App 可在 `motionEnded` 里调 `LogConsoleShake.notify()`，与修饰符走同一条通知。摇一摇撤销会截获事件：DEBUG 下关 `applicationSupportsShakeToEdit`。手机平放时留菜单按钮。
 
 ---
 

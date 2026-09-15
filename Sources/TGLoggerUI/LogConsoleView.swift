@@ -18,11 +18,13 @@ private func copyToClipboard(_ text: String) {
 
 /// DEBUG log console over a ``MemoryDestination``.
 ///
-/// Embed it from an app's debug menu:
+/// Embed it from an app's debug menu, or present it with
+/// ``View/logConsoleOnShake(destination:isEnabled:)`` (DEBUG iOS):
 ///
 /// ```swift
 /// #if DEBUG
-/// LogConsoleView(destination: memory)
+/// ContentView()
+///     .logConsoleOnShake(destination: memory)
 /// #endif
 /// ```
 ///
