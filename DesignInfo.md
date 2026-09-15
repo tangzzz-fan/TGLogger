@@ -75,8 +75,9 @@ PII 放进 metadata，不要插进 message。
 | 版本 | 内容 |
 |------|------|
 | **0.1.x** | 核心 API 冻结试用：`LogCenter` / `Logger` / Destination / 来源与 correlation ID。Example 只作教具。 |
-| **0.2.0** | 可选独立 product `TGLoggerUI`；`MemoryDestination.makeRecordsStream`；Example 用控制台演示「与 Xcode 同一条记录、断链后仍及时」。iOS DEBUG 可用 `.logConsoleOnShake`。见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)、[docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。 |
+| **0.2.0** | 可选独立 product `TGLoggerUI`；`MemoryDestination.makeRecordsStream`；Example 用控制台演示「与 Xcode 同一条记录、断链后仍及时」。见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)、[docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。 |
 | **0.3.0** | `FileDestination`（轮转、体积上限）：杀进程 / 会话结束后把日志拷走。不替代手机上的及时列表，也不做 WiFi 回传。 |
+| **0.4.0** | DEBUG iOS `.logConsoleOnShake`；应用侧 Factory / 防腐层文档。本包仍不依赖 Factory，不提供业务 `AppLogging`。 |
 | **1.0.0** | 至少有一个真实 App 用过后再锁公开 API。 |
 
 不单独开 Demo 仓库：Example 跟库同仓，但 **禁止** 写进 `Package.swift` 的 `products` / `targets`。SPM 「Add Package」会看到 `TGLogger` 和可选的 `TGLoggerUI`，不会看到 Demo 工程。克隆仓库的人能看见 `Example/`，这是可接受的折中。

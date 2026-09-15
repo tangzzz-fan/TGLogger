@@ -1,11 +1,11 @@
 # 真实 App 接入（DEBUG + 连硬件）
 
-给已经发布的 0.3.0 用：现场看日志走手机控制台，会话后再看走落盘文件。不要做 WiFi 回传。
+给已经发布的 0.4.0 用：现场看日志走手机控制台（按钮或摇一摇），会话后再看走落盘文件。不要做 WiFi 回传。
 
 ## 1. 依赖
 
 ```swift
-.package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.3.0")
+.package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.4.0")
 
 .product(name: "TGLogger", package: "TGLogger"),
 #if DEBUG

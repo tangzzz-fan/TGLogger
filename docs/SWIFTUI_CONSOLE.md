@@ -212,9 +212,9 @@ TGLoggerUI 对齐的是这个**入口习惯**，不是 FLEX 的对象浏览器�
 
 ## 8. 下一步
 
-**0.2.0 已发布。** 及时看现场用 `LogConsoleView`，不要做 WiFi 回传。见 [UNTETHERED_LOGGING.md](UNTETHERED_LOGGING.md)。
+**0.4.0 已发布。** 及时看现场用 `LogConsoleView`（按钮或 DEBUG iOS 摇一摇），不要做 WiFi 回传。见 [UNTETHERED_LOGGING.md](UNTETHERED_LOGGING.md)。
 
-`FileDestination`（0.3.0）只解决杀进程 / 会话结束后把文件拷出来。
+`FileDestination`（0.3.0）只解决杀进程 / 会话结束后把文件拷出来。应用侧 Factory / 防腐层见 [FACTORY.md](FACTORY.md)、[ANTI_CORRUPTION.md](ANTI_CORRUPTION.md)。公开 API 等真实 App 用过再锁 1.0。
 
 ---
 
