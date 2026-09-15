@@ -35,7 +35,7 @@
 | 手记 | 卡在哪 | 下一步 | 复查日期 |
 |------|--------|--------|----------|
 | [memory-destination-stream](2026-09-15-memory-destination-stream.md) | 没有 SwiftUI 消费端，`bufferingNewest` 策略无专项测试 | 实现 `TGLoggerUI` 的 `LogConsoleStore` 时一并验收 | 0.2.0 开工时 |
-| [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | 守卫在 CI 的首次实跑还没发生（本地已双向验证） | 看下一次 CI 运行是否绿灯 | 下次 push 后 |
+| [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | ~~守卫在 CI 的首次实跑还没发生~~ **已确认**：run `34977311114` 绿灯（2026-09-15） | 关闭 | — |
 | [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | 兄弟仓库 `TGFeatureFlag` 用的是同一份 `.gitignore` 模板 | 决定是否一起删掉那条 `docs/` | 下次动该仓库时 |
 
 ---
