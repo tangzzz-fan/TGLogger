@@ -640,4 +640,236 @@ struct FileDestinationTests {
         let text = try combinedText(destination)
         #expect(text.components(separatedBy: "\n").filter { $0.contains("n=") }.count == 200)
     }
+
+    @Test("Nothing touches the file system until the first write")
+    func lazyOpen() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let unused = dir.appendingPathComponent("unused", isDirectory: true)
+        let destination = FileDestination(directory: unused, minimumLevel: .trace)
+
+        #expect(!FileManager.default.fileExists(atPath: unused.path))
+        #expect(!FileManager.default.fileExists(atPath: destination.currentFileURL.path))
+        #expect(destination.existingFileURLs().isEmpty)
+        destination.flush()  // no-op before anything is open
+        destination.close()
+
+        let logger = makeCenter([destination]).logger(category: "file")
+        logger.info("first line")
+        #expect(FileManager.default.fileExists(atPath: destination.currentFileURL.path))
+
+        destination.close()
+        #expect(try String(contentsOf: destination.currentFileURL, encoding: .utf8).contains("first line"))
+    }
+
+    @Test("Default flush policy is never and survives close/reopen cycles")
+    func flushPolicyDefaults() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(directory: dir, minimumLevel: .trace)
+        #expect(destination.flushPolicy == .never)
+
+        let logger = makeCenter([destination]).logger(category: "file")
+        logger.info("one")
+        destination.flush()
+        destination.close()
+        destination.close()  // idempotent
+        logger.info("two")   // reopens on demand
+        destination.close()
+
+        let text = try String(contentsOf: destination.currentFileURL, encoding: .utf8)
+        #expect(text.contains("one"))
+        #expect(text.contains("two"))
+    }
+
+    @Test("everyWrite keeps the 0.3/0.4 behavior available")
+    func everyWritePolicy() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let destination = FileDestination(directory: dir, flushPolicy: .everyWrite, minimumLevel: .trace)
+        #expect(destination.flushPolicy == .everyWrite)
+
+        let logger = makeCenter([destination]).logger(category: "file")
+        logger.info("durable")
+        destination.close()
+
+        #expect(try String(contentsOf: destination.currentFileURL, encoding: .utf8).contains("durable"))
+    }
+
+    @Test("Interval policy clamps tiny periods and keeps writing functional")
+    func intervalPolicy() throws {
+        let dir = try makeLogDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(FileFlushPolicy.interval(0.001).timerInterval == 0.05)
+        #expect(FileFlushPolicy.never.timerInterval == nil)
+        #expect(FileFlushPolicy.everyWrite.timerInterval == nil)
+
+        let destination = FileDestination(directory: dir, flushPolicy: .interval(0.05), minimumLevel: .trace)
+        let logger = makeCenter([destination]).logger(category: "file")
+        logger.info("timed")
+        Thread.sleep(forTimeInterval: 0.15)  // let the background timer fire
+        destination.close()
+
+        #expect(try String(contentsOf: destination.currentFileURL, encoding: .utf8).contains("timed"))
+    }
+}
+
+/// Records everything it receives, optionally slowing each write down so queue
+/// behavior is observable. `flush` / `close` are counted so barriers can be tested.
+private final class SpyDestination: FlushableDestination, @unchecked Sendable {
+    struct State: Sendable {
+        var messages: [String] = []
+        var correlationIDs: [String?] = []
+        var threads: Set<ObjectIdentifier> = []
+        var flushCount = 0
+        var closeCount = 0
+    }
+
+    let name = "spy"
+    let minimumLevel: LogLevel
+
+    private let lock = OSAllocatedUnfairLock(initialState: State())
+    private let writeDelay: TimeInterval
+
+    init(minimumLevel: LogLevel = .trace, writeDelay: TimeInterval = 0) {
+        self.minimumLevel = minimumLevel
+        self.writeDelay = writeDelay
+    }
+
+    var messages: [String] { lock.withLock { $0.messages } }
+    var correlationIDs: [String?] { lock.withLock { $0.correlationIDs } }
+    var writeThreads: Set<ObjectIdentifier> { lock.withLock { $0.threads } }
+    var flushCount: Int { lock.withLock { $0.flushCount } }
+    var closeCount: Int { lock.withLock { $0.closeCount } }
+
+    func write(_ record: LogRecord) {
+        if writeDelay > 0 {
+            Thread.sleep(forTimeInterval: writeDelay)
+        }
+        lock.withLock { state in
+            state.messages.append(record.message)
+            state.correlationIDs.append(record.correlationID)
+            state.threads.insert(ObjectIdentifier(Thread.current))
+        }
+    }
+
+    func flush() {
+        lock.withLock { $0.flushCount += 1 }
+    }
+
+    func close() {
+        lock.withLock { $0.closeCount += 1 }
+    }
+}
+
+@Suite("QueuedDestination")
+struct QueuedDestinationTests {
+    @Test("Writes leave the calling thread and keep their order")
+    func offCallerThreadAndOrdered() {
+        let spy = SpyDestination()
+        let queued = QueuedDestination(wrapping: spy, capacity: 4096)
+        let logger = makeCenter([queued]).logger(category: "queued")
+
+        let callerThread = ObjectIdentifier(Thread.current)
+        for index in 0..<200 {
+            logger.info("line-\(index)")
+        }
+        queued.flush()
+
+        #expect(spy.messages == (0..<200).map { "line-\($0)" })
+        #expect(!spy.writeThreads.contains(callerThread))
+        #expect(queued.droppedLineCount == 0)
+        #expect(queued.pendingLineCount == 0)
+    }
+
+    @Test("flush() is a barrier for everything enqueued before it")
+    func flushBarrier() {
+        let spy = SpyDestination(writeDelay: 0.002)
+        let queued = QueuedDestination(wrapping: spy)
+        let logger = makeCenter([queued]).logger(category: "queued")
+
+        for index in 0..<20 {
+            logger.info("n\(index)")
+        }
+        queued.flush()
+
+        #expect(spy.messages.count == 20)
+        #expect(spy.flushCount == 1)
+        #expect(spy.messages.last == "n19")
+    }
+
+    @Test("Overflow drops the oldest lines, counts them, and announces the gap")
+    func overflowDropsOldest() {
+        let spy = SpyDestination(writeDelay: 0.002)
+        let queued = QueuedDestination(wrapping: spy, capacity: 8)
+        let logger = makeCenter([queued]).logger(category: "queued")
+
+        for index in 0..<200 {
+            logger.info("burst-\(index)")
+        }
+        queued.flush()
+
+        let written = spy.messages.filter { $0.hasPrefix("burst-") }
+        #expect(queued.droppedLineCount > 0)
+        #expect(spy.messages.contains { $0.contains("queued log lines dropped") })
+        #expect(written.last == "burst-199")  // newest survives
+        // Nothing disappears silently: every enqueued line is either written or counted.
+        #expect(written.count + Int(queued.droppedLineCount) == 200)
+    }
+
+    @Test("close() flushes and closes the wrapped destination")
+    func closePropagates() {
+        let spy = SpyDestination()
+        let queued = QueuedDestination(wrapping: spy)
+        let logger = makeCenter([queued]).logger(category: "queued")
+
+        logger.info("before close")
+        queued.close()
+
+        #expect(spy.messages == ["before close"])
+        #expect(spy.flushCount == 1)
+        #expect(spy.closeCount == 1)
+    }
+
+    @Test("Concurrent writers lose nothing while capacity holds")
+    func concurrentWriters() {
+        let spy = SpyDestination()
+        let queued = QueuedDestination(wrapping: spy, capacity: 4096)
+        let logger = makeCenter([queued]).logger(category: "queued")
+
+        DispatchQueue.concurrentPerform(iterations: 500) { index in
+            logger.info("c\(index)")
+        }
+        queued.flush()
+
+        #expect(spy.messages.count == 500)
+        #expect(Set(spy.messages).count == 500)
+        #expect(queued.droppedLineCount == 0)
+    }
+
+    @Test("Correlation IDs and metadata survive the queue unchanged")
+    func recordsPassThroughUnchanged() {
+        let spy = SpyDestination()
+        let queued = QueuedDestination(wrapping: spy)
+        let logger = makeCenter([queued]).logger(category: "queued")
+
+        LogContext.$correlationID.withValue("req-9") {
+            logger.info("tagged", metadata: ["k": .public(.int(2))])
+        }
+        queued.flush()
+
+        #expect(spy.correlationIDs == ["req-9"])
+        #expect(spy.messages == ["tagged"])
+    }
+
+    @Test("Name and level are inherited for diagnostics")
+    func metadataEcho() {
+        let spy = SpyDestination(minimumLevel: .warning)
+        let queued = QueuedDestination(wrapping: spy)
+        #expect(queued.minimumLevel == .warning)
+        #expect(queued.name == "queued(spy)")
+
+        let file = FileDestination(directory: FileManager.default.temporaryDirectory, name: "file")
+        #expect(file.queued().name == "queued(file)")
+    }
 }

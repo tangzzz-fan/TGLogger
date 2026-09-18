@@ -7,18 +7,32 @@ import os
 /// for live on-device viewing. `write` is synchronous, serialized, and never hops
 /// to `MainActor`. I/O failures are swallowed so logging cannot crash the app.
 ///
+/// **Caller-thread cost.** One `write` is an encode plus an append into the kernel
+/// page cache (microseconds), so `write` is safe on the main thread. Storage round
+/// trips are not: they happen on rotation, on ``close()``, on ``flush()``, and —
+/// only with ``FileFlushPolicy/everyWrite`` — per line. ``FileFlushPolicy/never``
+/// (the default) keeps `fsync` off the main thread; wrap the destination in
+/// ``QueuedDestination`` when even rotation or the first open must leave the caller.
+///
+/// Nothing touches the file system until the first ``write(_:)``: ``init`` only
+/// stores configuration.
+///
 /// Layout (``maxFileCount`` = 3): `name.log` (active), `name.1.log` (previous),
 /// `name.2.log` (oldest kept). When the active file exceeds ``maxFileSize``,
 /// it is rotated and a new empty `name.log` is opened.
-public final class FileDestination: LogDestination, Sendable {
+public final class FileDestination: FlushableDestination, Sendable {
     public let name: String
     public let minimumLevel: LogLevel
     public let directory: URL
     public let fileName: String
     public let maxFileSize: Int
     public let maxFileCount: Int
+    public let flushPolicy: FileFlushPolicy
 
     private let lock: OSAllocatedUnfairLock<FileIO>
+
+    /// Background queue for ``FileFlushPolicy/interval(_:)`` flushes; never `MainActor`.
+    private static let flushQueue = DispatchQueue(label: "tglogger.file.flush", qos: .utility)
 
     /// Caches directory + `folderName`, creating nothing until the destination is used.
     public static func cachesDirectory(folderName: String = "TGLogger") -> URL {
@@ -32,6 +46,7 @@ public final class FileDestination: LogDestination, Sendable {
         fileName: String = "tglogger",
         maxFileSize: Int = 512_000,
         maxFileCount: Int = 3,
+        flushPolicy: FileFlushPolicy = .never,
         minimumLevel: LogLevel = .debug,
         name: String = "file"
     ) {
@@ -41,9 +56,14 @@ public final class FileDestination: LogDestination, Sendable {
         self.fileName = Self.sanitizedFileName(fileName)
         self.maxFileSize = max(1, maxFileSize)
         self.maxFileCount = max(1, maxFileCount)
+        self.flushPolicy = flushPolicy
         self.lock = OSAllocatedUnfairLock(initialState: FileIO())
+    }
+
+    deinit {
         lock.withLock { io in
-            openCurrentLocked(&io)
+            io.timer?.cancel()
+            io.timer = nil
         }
     }
 
@@ -70,7 +90,9 @@ public final class FileDestination: LogDestination, Sendable {
             guard let handle = io.handle else { return }
             do {
                 try handle.write(contentsOf: data)
-                try handle.synchronize()
+                if flushPolicy == .everyWrite {
+                    try handle.synchronize()
+                }
                 io.byteCount += UInt64(data.count)
             } catch {
                 io.handle = nil
@@ -78,12 +100,23 @@ public final class FileDestination: LogDestination, Sendable {
         }
     }
 
-    /// Closes the active handle. The next ``write(_:)`` reopens it.
+    /// Pushes written lines to storage. Blocks the calling thread; a no-op when
+    /// nothing is open.
+    public func flush() {
+        lock.withLock { io in
+            try? io.handle?.synchronize()
+        }
+    }
+
+    /// Flushes, stops the interval timer, and releases the handle. The next
+    /// ``write(_:)`` reopens the file.
     public func close() {
         lock.withLock { io in
             try? io.handle?.synchronize()
             try? io.handle?.close()
             io.handle = nil
+            io.timer?.cancel()
+            io.timer = nil
         }
     }
 
@@ -101,10 +134,22 @@ public final class FileDestination: LogDestination, Sendable {
             let handle = try FileHandle(forWritingTo: url)
             io.byteCount = try handle.seekToEnd()
             io.handle = handle
+            startTimerLocked(&io)
         } catch {
             io.handle = nil
             io.byteCount = 0
         }
+    }
+
+    private func startTimerLocked(_ io: inout FileIO) {
+        guard let interval = flushPolicy.timerInterval, io.timer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: Self.flushQueue)
+        timer.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(50))
+        timer.setEventHandler { [weak self] in
+            self?.flush()
+        }
+        io.timer = timer
+        timer.activate()
     }
 
     private func rotateLocked(_ io: inout FileIO) {
@@ -146,4 +191,5 @@ public final class FileDestination: LogDestination, Sendable {
 private struct FileIO: @unchecked Sendable {
     var handle: FileHandle?
     var byteCount: UInt64 = 0
+    var timer: DispatchSourceTimer?
 }

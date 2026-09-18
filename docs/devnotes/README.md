@@ -11,6 +11,7 @@
 
 | 日期 | 类型 | 一句话 | 文件 |
 |------|------|--------|------|
+| 2026-09-18 | bug + 功能 | `FileDestination` 每行 fsync 卡死主线程（真机 7931 ms）；「同步」被误读成「调用线程做 I/O」；改默认 flush 策略 + 预备 `QueuedDestination` | [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) |
 | 2026-09-15 | 功能 | `TGLoggerUI` product 落地（View/Store/Filter）；踩了 Task 自捕获初始化与「先快照后订阅」丢窗两个坑 | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
 | 2026-09-15 | 功能 | `MemoryDestination` 新增 `makeRecordsStream()` 实时流（0.2.0 第一刀），多消费者靠 `StreamBox` 身份摘除 | [memory-destination-stream](2026-09-15-memory-destination-stream.md) |
 | 2026-09-15 | bug | `.gitignore` 里裸 `docs/` 在 macOS 上连 `Docs/` 一起吞，手写文档「本地存在但 git 永远不收」 | [2026-09-15-docs-gitignore-swallow.md](2026-09-15-docs-gitignore-swallow.md) |
@@ -19,6 +20,9 @@
 
 | 我看到的信号 | 大概是什么问题 | 手记 |
 |--------------|----------------|------|
+| 真机主线程卡顿秒级，模拟器却 0 笔 | 调用线程上的存储 I/O（fsync / 大文件操作）；模拟器 SSD 便宜所以看不见 | [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) |
+| 同一段调用里两行日志时间戳隔了数秒 | 写日志在中间阻塞了（时间戳在 record 创建时取） | [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) |
+| 单元测试里「去掉 fsync」无法用读文件断言 | page cache 让「有内容」与「已 fsync」不可区分，只能靠真机剖面验收 | [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) |
 | `xcodebuild` 报 `sandbox-exec: sandbox_apply: Operation not permitted`（Could not resolve package dependencies） | 代理环境拒绝 Xcode 内部 SwiftPM 的嵌套沙箱；命令行走不通，改用 /tmp 检查包 + `swift build --disable-sandbox`，最终以 Xcode 手动编译为准 | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
 | 裸 `swiftc` 报「external macro implementation … could not be found / malformed response」 | 同一个沙箱问题打挂了 swift-plugin-server | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
 | `self.xxx` 报「used before being initialized」（Task 闭包里捕获 self） | `let` 属性的初始化表达式里逃逸捕获未初始化完的 self；改 optional var | [tgloggerui-product](2026-09-15-tgloggerui-product.md) |
@@ -32,6 +36,8 @@
 
 | 规则 | 来源 | 落地状态 |
 |------|------|----------|
+| 契约要写「多久返回 / 谁付成本 / 顺序如何」，不要只写「同步」 | [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) | 已写进 `LogDestination` 文档与 `docs/APP_INTEGRATION.md` |
+| 慢 I/O destination 不得在调用线程做存储往返；默认值必须对没做包装的接入方也安全 | 同上 | 已落地为 `FileFlushPolicy.never` 默认 + 测试锁住默认值 |
 | 不要在 `.gitignore` 写裸 `docs/` 或 `Docs/`；手写文档必须入库，只忽略生成物 | [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | 已落地为 `.gitignore` 反例注释 |
 | 新写文档后立刻 `git status --short` 确认它出现在待提交列表里 | 同上 | **CI 守卫已落地**：磁盘上有、索引里没有的 `docs/` 文件会让构建失败（`ci.yml` checkout 之后） |
 
@@ -39,6 +45,8 @@
 
 | 手记 | 卡在哪 | 下一步 | 复查日期 |
 |------|--------|--------|----------|
+| [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) | 真机复测（T3）未做；判据「0 笔 >100 ms 尖峰」 | app 删掉自建异步包装、直连 `FileDestination`，真机重跑同一段 stall 剖面 | 0.5.0 发版前 |
+| [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) | 真机性能回归没有门禁（单测证明不了 fsync 是否发生） | 考虑把关键路径的 stall 采样做成可复跑的脚本（app 侧） | 下次做性能回归时 |
 | [tgloggerui-product](2026-09-15-tgloggerui-product.md) | Example 已在 Xcode 编译通过，但模拟器上的渲染/交互未手测 | 跑一次模拟器：推入控制台、过滤、清空 | 0.2.0 发版前 |
 | [memory-destination-stream](2026-09-15-memory-destination-stream.md) | `bufferingNewest` 策略无专项测试 | 随 `LogConsoleStore` 验收一并看是否需要 | 0.2.0 发版前 |
 | [docs-gitignore-swallow](2026-09-15-docs-gitignore-swallow.md) | ~~守卫在 CI 的首次实跑还没发生~~ **已确认**：run `34977311114` 绿灯（2026-09-15） | 关闭 | — |

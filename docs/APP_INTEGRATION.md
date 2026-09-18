@@ -33,6 +33,16 @@ let logs = LogCenter(
 )
 ```
 
+`FileDestination` 默认 `flushPolicy: .never`（0.5.0 起）：每行只写进 page cache，进程被杀不丢，落盘发生在轮转 / `close()` / `flush()`。**不要**为了「保险」传 `.everyWrite`——那正是真机上主线程秒级卡顿的来源（iOS 日志几乎都从主线程打）。想要断电也不丢，用 `.interval(1)`，定时器在后台队列上落盘。
+
+要连轮转与首次开文件都离开调用线程（例如日志很密、或现场存储压力大），包一层：
+
+```swift
+let file = FileDestination(directory: FileDestination.cachesDirectory()).queued()
+```
+
+`QueuedDestination` 用有界队列 + 私有串行队列写出；队列满时丢最旧并记账（`droppedLineCount`），下一个批次开头会插入一行 `tglogger.queue` 的说明，日志文件自己解释自己的缺口。代价是进程死时队列里未写出的那几行会丢。
+
 Release 可以去掉 `memory`，只留 `OSLogDestination()`（再加 `file` 若你要测完拷文件）。不要把 `PrintDestination` 当成断链后的监视器。
 
 项目里已经用了 Factory（`FactoryKit` / `import Factory`）时，把 `LogCenter`、`MemoryDestination`、`FileDestination` 注册成 **singleton**，控制台和分享必须解析到挂在 center 上的同一实例。完整写法见 [FACTORY.md](FACTORY.md)。TGLogger **不**依赖 Factory。
@@ -60,7 +70,7 @@ ContentView()
 
 ## 5. 测完带走
 
-杀进程后内存列表没了，磁盘上的 `file.currentFileURL` / `file.existingFileURLs()` 还在。用系统分享（隔空投送 / 文件）拷走。Demo 里的 **Share log files** 就是这个。
+杀进程后内存列表没了，磁盘上的 `file.currentFileURL` / `file.existingFileURLs()` 还在。用系统分享（隔空投送 / 文件）拷走。Demo 里的 **Share log files** 就是这个。分享前若想要确定的落盘点，先 `file.flush()`。
 
 ## 6. 不要做的
 

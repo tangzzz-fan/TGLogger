@@ -26,6 +26,7 @@ Logger (category + bound metadata)
 ## 2. 并发
 
 - **禁止** 为写日志 hop 到 `MainActor`。
+- `write` 的成本上限 = 微秒级 encode + 进程内缓冲。慢 I/O destination 不得在调用线程上做存储往返：`FileDestination` 默认 `FileFlushPolicy.never`（只在轮转 / `close()` / `flush()` / 可选后台定时器落盘），需要连轮转与首次 open 都离开调用线程时用 `QueuedDestination` 包一层。
 - Destination 必须 `Sendable`，`write` 可被任意线程同时调用。
 - `MemoryDestination` / `CapturingDestination` / `LogCenter` 的序号使用 `OSAllocatedUnfairLock`（iOS 16+，满足本包的 iOS 17 下限）。不使用 iOS 18 才有的 `Mutex`。
 - `message` 为 `@autoclosure`：center 与全部 destination 都过滤掉时，不拼接字符串。
@@ -66,7 +67,7 @@ PII 放进 metadata，不要插进 message。
 - `Logger` 方法变成 `async`
 - 公开 API 使用 `Any` 或 `fatalError`
 
-文件落盘用 `FileDestination`；远程通道仍不进本包。
+文件落盘用 `FileDestination`（默认不每行 fsync；要零调用线程 I/O 用 `FileDestination.queued()`）；远程通道仍不进本包。
 
 ---
 
@@ -78,6 +79,7 @@ PII 放进 metadata，不要插进 message。
 | **0.2.0** | 可选独立 product `TGLoggerUI`；`MemoryDestination.makeRecordsStream`；Example 用控制台演示「与 Xcode 同一条记录、断链后仍及时」。见 [docs/SWIFTUI_CONSOLE.md](docs/SWIFTUI_CONSOLE.md)、[docs/UNTETHERED_LOGGING.md](docs/UNTETHERED_LOGGING.md)。 |
 | **0.3.0** | `FileDestination`（轮转、体积上限）：杀进程 / 会话结束后把日志拷走。不替代手机上的及时列表，也不做 WiFi 回传。 |
 | **0.4.0** | DEBUG iOS `.logConsoleOnShake`；应用侧 Factory / 防腐层文档。本包仍不依赖 Factory，不提供业务 `AppLogging`。 |
+| **0.5.0** | `FileDestination` 默认不再每行 `synchronize()`（真机主线程秒级 stall 的根因）；新增 `FileFlushPolicy`、`FlushableDestination`、`QueuedDestination`（`FileDestination.queued()`）。行为变更：0.3 / 0.4 的每行落盘需显式 `flushPolicy: .everyWrite`。 |
 | **1.0.0** | 至少有一个真实 App 用过后再锁公开 API。 |
 
 不单独开 Demo 仓库：Example 跟库同仓，但 **禁止** 写进 `Package.swift` 的 `products` / `targets`。SPM 「Add Package」会看到 `TGLogger` 和可选的 `TGLoggerUI`，不会看到 Demo 工程。克隆仓库的人能看见 `Example/`，这是可接受的折中。

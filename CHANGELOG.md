@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`FileDestination` no longer flushes per line by default.** 0.3.0 / 0.4.0 called `synchronize()` after every record **on the calling thread**, and iOS logging happens on the main thread: measured stalls were 7931 / 3062 / 861 ms on device (0 on the simulator, where SSD `fsync` is cheap). Scheduled flush points are now rotation, `close()`, `flush()`, and an optional background timer. Lines already written land in the kernel page cache, so they still survive process death — `fsync` only guards against device power loss.
+- `FileDestination.init` no longer touches the file system: directory, file, and handle are created on the first `write`, matching the documented behavior. `close()` now also stops the interval timer.
+- `LogDestination` documentation now states the real contract: `write` must return promptly and keep per-destination order. "Synchronous" never meant "the calling thread performs the I/O".
+
+### Added
+- **`FileFlushPolicy`**: `.never` (default) / `.interval(_:)` (flush from a background timer) / `.everyWrite` (the 0.3/0.4 behavior, opt-in).
+- **`FlushableDestination`**: `LogDestination` plus `flush()` / `close()`, implemented by `FileDestination`.
+- **`QueuedDestination`** and **`FileDestination.queued(capacity:)`**: wraps any destination in a bounded in-memory queue drained by a private serial queue, so no caller thread performs I/O at all. On overflow the oldest lines are dropped, counted in `droppedLineCount`, and announced by a synthetic `tglogger.queue` line.
+
 ## [0.4.0] - 2026-09-16
 
 ### Added

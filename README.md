@@ -15,12 +15,14 @@ iOS 17+、macOS 14+、tvOS 17+、watchOS 10+
 - **来源追踪**：每条 `LogRecord` 带 `#fileID` / `#function` / `#line` / `#column`
 - **关联 ID**：`LogContext.$correlationID`（`@TaskLocal`），子任务会继承
 - **结构化字段**：`LogValue` 为 `string` / `int` / `double` / `bool`，并可按键设置隐私
-- **出口**：`OSLogDestination`、`PrintDestination`、`MemoryDestination`（环形缓冲 + 实时 `AsyncStream`）、`FileDestination`（落盘 + 按大小轮转）、`CapturingDestination`（测试用）
+- **出口**：`OSLogDestination`、`PrintDestination`、`MemoryDestination`（环形缓冲 + 实时 `AsyncStream`）、`FileDestination`（落盘 + 按大小轮转，默认不每行 fsync）、`CapturingDestination`（测试用）
 - **可选 `TGLoggerUI`**：基于 `MemoryDestination` 的进程内调试控制台（`LogConsoleView`）；不主动链接就不会带上
 - **过滤**：`LogCenter.minimumLevel` 与每个 Destination 自己的下限；`message` 用 `@autoclosure`，被丢掉时不拼字符串
 - **Swift 6**：`Sendable`、同步写出、不 hop `MainActor`、公开 API 不用 `Any` / `fatalError`
 
 未做：远程上报、网络抓包 / WiFi 回传。及时看现场用 `TGLoggerUI`；杀进程后再看用 `FileDestination`。
+
+`FileDestination` 默认 **不** 每行落盘（`FileFlushPolicy.never`）：写一行只是写进内核 page cache，进程被杀也不丢；落盘发生在轮转、`close()`、`flush()`，或用 `flushPolicy: .interval(1)` 交给后台定时器。真机主线程上的秒级卡顿正来自旧的「每行 `fsync`」，需要旧行为请显式传 `.everyWrite`。若连轮转和首次开文件都不许占用调用线程，用 `FileDestination.queued()` 包一层（`QueuedDestination`：有界队列 + 丢行记账）。
 
 ## 示例工程
 
