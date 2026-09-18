@@ -5,7 +5,7 @@
 ## 1. 依赖
 
 ```swift
-.package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.4.0")
+.package(url: "https://github.com/tangzzz-fan/TGLogger.git", from: "0.5.0")
 
 .product(name: "TGLogger", package: "TGLogger"),
 #if DEBUG

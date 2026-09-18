@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-09-18
 
 ### Changed
 - **`FileDestination` no longer flushes per line by default.** 0.3.0 / 0.4.0 called `synchronize()` after every record **on the calling thread**, and iOS logging happens on the main thread: measured stalls were 7931 / 3062 / 861 ms on device (0 on the simulator, where SSD `fsync` is cheap). Scheduled flush points are now rotation, `close()`, `flush()`, and an optional background timer. Lines already written land in the kernel page cache, so they still survive process death — `fsync` only guards against device power loss.

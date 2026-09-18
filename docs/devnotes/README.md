@@ -45,7 +45,7 @@
 
 | 手记 | 卡在哪 | 下一步 | 复查日期 |
 |------|--------|--------|----------|
-| [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) | 真机复测（T3）未做；判据「0 笔 >100 ms 尖峰」 | app 删掉自建异步包装、直连 `FileDestination`，真机重跑同一段 stall 剖面 | 0.5.0 发版前 |
+| [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) | **0.5.0 已发布**，但真机复测（T3）未跑；判据「0 笔 >100 ms 尖峰」 | app 删掉自建异步包装、直连 `FileDestination`，真机重跑同一段 stall 剖面；有尖峰则改用 `.queued()` | 发布后首轮真机验证 |
 | [file-destination-flush-policy](2026-09-18-file-destination-flush-policy.md) | 真机性能回归没有门禁（单测证明不了 fsync 是否发生） | 考虑把关键路径的 stall 采样做成可复跑的脚本（app 侧） | 下次做性能回归时 |
 | [tgloggerui-product](2026-09-15-tgloggerui-product.md) | Example 已在 Xcode 编译通过，但模拟器上的渲染/交互未手测 | 跑一次模拟器：推入控制台、过滤、清空 | 0.2.0 发版前 |
 | [memory-destination-stream](2026-09-15-memory-destination-stream.md) | `bufferingNewest` 策略无专项测试 | 随 `LogConsoleStore` 验收一并看是否需要 | 0.2.0 发版前 |

@@ -115,6 +115,7 @@ App（joveview）真机 DEBUG，`FileDestination` 直连 `LogCenter`、未做任
 ## 修订记录
 
 - **2026-09-18**：初稿。此时真机复测（T3）未做，`QueuedDestination` 已实现但未接入默认路径。
+- **2026-09-18（发布）**：CHANGELOG 段从 `[Unreleased]` 提升为 `[0.5.0] - 2026-09-18`；`README.md` / `docs/APP_INTEGRATION.md` 的依赖版本号由 `from: "0.4.0"` 改为 `from: "0.5.0"`。**T3 仍未跑** —— 按 §6 判据它留在发布之后作为验收项：真机若仍有 >100 ms 尖峰，就用 `FileDestination.queued()` 复测（届时发 0.5.1 或并入 0.6.0，视改动面决定）。
 
 ## 相关手记
 
